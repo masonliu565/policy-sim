@@ -1,0 +1,93 @@
+{
+  "_comment": [
+    "Historical policies whose lever values are known from statute. This file",
+    "defines the EVIDENCE BASE in policy-lever space: a requested policy_spec is",
+    "reported as in_support only if it sits near at least one of these.",
+    "",
+    "Every entry carries a statutory citation. Lever values are read off the",
+    "statute, not estimated. Where a policy has no analogue for a lever, the",
+    "lever takes the neutral value (0 for credits/transfers, infinity for a",
+    "phaseout threshold that does not exist).",
+    "",
+    "This is NOT the opinion evidence file. data/evidence.json holds survey",
+    "crosstabs used for poststratification; this file holds policy parameters",
+    "used to decide whether a proposal is inside the evidence base at all."
+  ],
+  "policies": [
+    {
+      "policy_id": "ctc_2021",
+      "label": "Expanded Child Tax Credit (2021)",
+      "year": 2021,
+      "source": "American Rescue Plan Act of 2021, Pub. L. 117-2, Sec. 9611 (amending IRC Sec. 24)",
+      "levers": {
+        "credit_per_child_under_6": 3600.0,
+        "credit_per_child_6_to_17": 3000.0,
+        "fully_refundable": true,
+        "phaseout_start_single": 75000.0,
+        "phaseout_start_joint": 150000.0,
+        "phaseout_rate": 0.05,
+        "flat_transfer_per_adult": 0.0
+      }
+    },
+    {
+      "policy_id": "ctc_tcja",
+      "label": "Child Tax Credit under TCJA (2018-2025)",
+      "year": 2018,
+      "source": "Tax Cuts and Jobs Act of 2017, Pub. L. 115-97, Sec. 11022 (amending IRC Sec. 24)",
+      "levers": {
+        "credit_per_child_under_6": 2000.0,
+        "credit_per_child_6_to_17": 2000.0,
+        "fully_refundable": false,
+        "phaseout_start_single": 200000.0,
+        "phaseout_start_joint": 400000.0,
+        "phaseout_rate": 0.05,
+        "flat_transfer_per_adult": 0.0
+      }
+    },
+    {
+      "policy_id": "ctc_pre_tcja",
+      "label": "Child Tax Credit, pre-2018 law",
+      "year": 2001,
+      "source": "IRC Sec. 24 as amended by EGTRRA 2001, Pub. L. 107-16",
+      "levers": {
+        "credit_per_child_under_6": 1000.0,
+        "credit_per_child_6_to_17": 1000.0,
+        "fully_refundable": false,
+        "phaseout_start_single": 75000.0,
+        "phaseout_start_joint": 110000.0,
+        "phaseout_rate": 0.05,
+        "flat_transfer_per_adult": 0.0
+      }
+    },
+    {
+      "policy_id": "eip_2021",
+      "label": "Economic Impact Payment, third round (2021)",
+      "year": 2021,
+      "source": "American Rescue Plan Act of 2021, Pub. L. 117-2, Sec. 9601 (IRC Sec. 6428B)",
+      "levers": {
+        "credit_per_child_under_6": 1400.0,
+        "credit_per_child_6_to_17": 1400.0,
+        "fully_refundable": true,
+        "phaseout_start_single": 75000.0,
+        "phaseout_start_joint": 150000.0,
+        "phaseout_rate": 0.28,
+        "flat_transfer_per_adult": 1400.0
+      }
+    },
+    {
+      "policy_id": "ak_pfd",
+      "label": "Alaska Permanent Fund Dividend (recurring)",
+      "year": 2024,
+      "source": "Alaska Stat. Sec. 43.23 (Permanent Fund Dividend program)",
+      "levers": {
+        "credit_per_child_under_6": 0.0,
+        "credit_per_child_6_to_17": 0.0,
+        "fully_refundable": true,
+        "phaseout_start_single": null,
+        "phaseout_start_joint": null,
+        "phaseout_rate": 0.0,
+        "flat_transfer_per_adult": 1300.0
+      }
+    }
+  ]
+}

@@ -112,6 +112,27 @@ PARAMS = {
 }
 
 # ---------------------------------------------------------------------------
+# Evidence quality gate
+# ---------------------------------------------------------------------------
+# Minimum subgroup sample size for a survey crosstab to be used as a predictor
+# weight in poststratification. Below this the record's own standard error
+# dominates the output interval while carrying almost no information: at
+# n = 100 and p = 0.5 the standard error is 5.0 points; at n = 300 it is 2.9.
+# Records below the threshold are EXCLUDED and named in warnings, never
+# silently down-weighted.
+MIN_EVIDENCE_N = 300
+
+# Minimum share of a group's households (by weight) that must sit in cells with
+# real evidence before a support number is reported for that group.
+#
+# WHY THIS EXISTS: aggregating over only the covered cells silently reweights a
+# group to its covered subset. With evidence for Q1 alone, "couple_no_kids
+# support = 74%" is really "Q1 couple_no_kids support = 74%" wearing a broader
+# label. That is imputation by omission. Below this threshold the group reports
+# evidence_status "insufficient_evidence" instead.
+MIN_GROUP_COVERAGE = 0.60
+
+# ---------------------------------------------------------------------------
 # Low-sample threshold
 # ---------------------------------------------------------------------------
 # A group whose interval is reported but flagged `low_sample: true` in the
