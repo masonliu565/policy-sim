@@ -48,6 +48,8 @@ mechanism that would decide it, and say plainly which part is measured and \
 which part is reasoning. A question that the data cannot close is still a \
 question you engage with.
 
+Never write a fact's id in your prose. The ids (dc_wage_p10, couple_no_kids, tax_burden_Q5 and the like) are internal handles; a reader sees only your sentences, so name the thing in words -- "the lowest fifth by income", "couples without children". Ids belong in usedFactIds and nowhere else.
+
 Be concrete and brief. A reader should finish knowing what is known, what \
 follows from it, and what would change the answer. No preamble, no restating \
 the question, no offers of further help.
@@ -147,7 +149,11 @@ def _call(messages: List[Dict[str, str]], timeout: float) -> Optional[str]:
     try:
         import anthropic
         client = anthropic.Anthropic(api_key=key, timeout=timeout, max_retries=0)
-        msg = client.messages.create(model=interpret_claude.MODEL, max_tokens=1400,
+        # A tax answer carries 25+ facts and four prose fields; at 1400 the
+        # JSON was being cut off mid-array, which looked exactly like the
+        # guardrail rejecting a draft. It is not the same failure and should
+        # not be diagnosed as one.
+        msg = client.messages.create(model=interpret_claude.MODEL, max_tokens=3000,
                                      system=SYSTEM, messages=messages)
         return "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
     except Exception:                                           # noqa: BLE001
@@ -177,7 +183,9 @@ def reason(question: str, spec: Dict[str, Any], facts: List[Dict[str, Any]],
     for attempt in (1, 2):
         got = _parse(_call(messages, timeout) or "")
         if not got:
-            notes.append("The reasoning model did not return a usable answer.")
+            notes.append("The reasoning model did not return a usable answer "
+                         "(no parseable object, most often a truncated reply). "
+                         "This is not the fabrication guard rejecting it.")
             return None, notes
         text = " ".join(str(got.get(f, "")) for f in FIELDS)
         bad = violations(text, ok)

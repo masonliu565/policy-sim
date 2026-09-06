@@ -165,6 +165,48 @@ question matched on the bare word "tax" and was answered with income tax
 arithmetic; it now falls to the reasoning layer instead, which is a missing
 number rather than a wrong one.
 
+### A tax answer is more than its revenue
+
+Revenue alone does not tell you whether a policy is a good idea. A tax answer
+now carries three things beside it, and each is a different question:
+
+**Who carries it.** The lowest fifth gives up 0.55% of its income and the top
+fifth 4.67% — progressive, though not steeply. Separately, **59% of the revenue
+comes from the top fifth alone**. Those two facts are not the same and a tax
+answer needs both: a change can be mildly progressive per household and still
+rest almost entirely on one group, which is the exposure any behavioural
+response acts on first. They get their own table, *Where the revenue comes
+from*.
+
+**Who crosses the line.** A rate is an average; the count of people who
+actually move across the poverty line is what the rate is made of. The engine
+now reports crossings in both directions for every policy. The $400/month
+per-child transfer lifts **2,158 people, 1,381 of them children**, above the
+federal line and pushes nobody under. The 5-point tax rise moves nobody either
+way, because households below the line have taxable income under the standard
+deduction.
+
+**What might follow.** A side-effects paragraph, written by the reasoning layer
+against the measured figures under the same rule as everywhere else: it may
+state those numbers and no others. So it can observe that the yield depends on
+one group staying, and that DC is unusual because a move across the Maryland
+line need not change anyone's commute — and it cannot produce a migration
+elasticity, an approval rating or a job-loss figure, because we hold none. It
+correctly raises that the District is barred from taxing commuters, which is
+mechanism, not measurement, and it says so.
+
+The section never disappears. When the reasoning model is unavailable, or its
+draft is rejected, the same section is assembled from the measured exposure —
+a missing paragraph reads as the system having nothing to say, when in fact
+the exposure is counted.
+
+**No approval figure is offered for a tax, and that is deliberate.** The
+opinion evidence is polling on cash transfers — the 2021 expanded CTC, the 2021
+stimulus payments, UBI, the ARP package. Nobody in it was asked about a tax, in
+DC or anywhere. Poststratifying transfer polling onto a tax question would
+produce a support number for a policy nobody was surveyed on, which is the
+exact bug `check_in_support` exists to prevent.
+
 ### The change is a paired difference
 
 Building the tax path exposed a real defect in the engine. `baseline` was a
@@ -291,7 +333,7 @@ recomputation from the cache, and the unanswerable question stays unanswered.
 ### Checks
 
 ```bash
-python -m pytest app/tests dc_api -q   # 127 tests
+python -m pytest app/tests dc_api -q   # 134 tests
 python app/tests/smoke_demo.py      # drives the running app in a browser
 python model/diagnostics.py         # 25 engine invariants + MCMC convergence
 bash model/reproduce.sh             # rebuild every artefact from raw PUMS

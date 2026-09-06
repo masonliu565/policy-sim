@@ -119,6 +119,25 @@ def run_tax(points: Optional[float] = None, proportional: Optional[float] = None
         if st is not None:
             by_group.append({"group_type": gtype, "group": gname, **st})
 
+    # --- who carries it ----------------------------------------------------
+    # The households the tax moves ACROSS the poverty line. A rate change that
+    # leaves the aggregate rate flat can still push individual households
+    # under, and that is the number a reader means by "who gets hit".
+    # The weighted counts come from the engine, so one rule decides who is
+    # poor for taxes and for transfers alike. Only the unweighted record count
+    # is computed here, and only to disclose how thin the estimate is.
+    cross = impact["poverty_crossings"]
+    n_records = int((((pop.inc - delta) < pop.threshold)
+                     & ~(pop.inc < pop.threshold)).sum())
+    pushed = {"households": cross["entering_households"],
+              "people": cross["entering_people"],
+              "children": cross["entering_children"],
+              "records": n_records}
+
+    # Share of income taken, and share of the revenue raised, per income
+    # group. The first says who feels it; the second says where the money
+    # actually comes from, which is the exposure a behavioural response would
+    # act on.
     # Revenue is the design-weighted extra liability. Its interval comes from
     # the same bootstrap the outcomes use, so the two are consistent.
     rev_draws = (delta[None, :] * (pop.dw[None, :] * boot)).sum(1)
@@ -127,10 +146,37 @@ def run_tax(points: Optional[float] = None, proportional: Optional[float] = None
                "p95": float(np.percentile(rev_draws, 95))}
     paying_more = float((pop.dw * (delta > 0)).sum())
 
+    inc_pos = np.maximum(pop.inc.astype(float), 0.0)
+    total_rev = float((delta * pop.dw).sum())
+    burden = []
+    for (gtype, gname), mask in pop.masks.items():
+        if gtype != "income_quintile":
+            continue
+        g_delta = float((delta[mask] * pop.dw[mask]).sum())
+        g_income = float((inc_pos[mask] * pop.dw[mask]).sum())
+        share_draws = ((delta[None, :] * mask[None, :]
+                        * (pop.dw[None, :] * boot)).sum(1)
+                       / np.where(rev_draws != 0, rev_draws, np.nan))
+        share_draws = share_draws[np.isfinite(share_draws)]
+        burden.append({
+            "group": gname,
+            "sample_n": int(mask.sum()),
+            "share_of_income": (g_delta / g_income) if g_income else 0.0,
+            "share_of_revenue": (g_delta / total_rev) if total_rev else 0.0,
+            "share_of_revenue_p05": float(np.percentile(share_draws, 5))
+                                    if len(share_draws) else 0.0,
+            "share_of_revenue_p95": float(np.percentile(share_draws, 95))
+                                    if len(share_draws) else 0.0,
+            "households_weighted": float(pop.dw[mask].sum()),
+        })
+    burden.sort(key=lambda b: b["group"])
+
     out = {
         "impact": impact,
         "by_group": by_group,
         "annual_revenue_usd": revenue,
+        "pushed_into_poverty": pushed,
+        "burden_by_income": burden,
         "households_paying_more": paying_more,
         "households_total": float(pop.dw.sum()),
         "baseline_liability_usd": float((base_liability * pop.dw).sum()),

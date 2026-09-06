@@ -494,6 +494,29 @@ def _group_row(g: Dict[str, Any]) -> Dict[str, Any]:
                          "upper": g["pct_better_off_p95"]}}
 
 
+def revenue_source_table(burden: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Where the money actually comes from.
+
+    Share of income says who feels it; share of revenue says what the policy
+    depends on. They are different questions and a tax answer needs both: a
+    change can be mildly progressive per household and still rest almost
+    entirely on one group, which is the exposure any behavioural response acts
+    on first.
+    """
+    rows = []
+    for b in burden:
+        rows.append({
+            "label": f"{GROUP_LABEL.get(b['group'], b['group'])} - gives up "
+                     f"{100 * b['share_of_income']:.2f}% of its own income",
+            "validRecords": b["sample_n"], "suppressed": False,
+            "share": b["share_of_revenue"],
+            "interval": {"lower": b["share_of_revenue_p05"],
+                         "upper": b["share_of_revenue_p95"]}})
+    return {"label": "Where the revenue comes from", "groups": rows,
+            "columns": ["Income group and share of its own income taken",
+                        "ACS records", "Share of the revenue", "90% interval"]}
+
+
 def impact_breakdowns(sim: Dict[str, Any], understood: str,
                       share_label: str = "Share reached",
                       reached: str = "Households reached",
@@ -502,7 +525,9 @@ def impact_breakdowns(sim: Dict[str, Any], understood: str,
                       share_note: str = "The share reached is the share of the "
                                         "group the transfer pays anything to. It "
                                         "is not a poverty change and not a "
-                                        "welfare claim.") -> Dict[str, Any]:
+                                        "welfare claim.",
+                      extra_tables: Optional[List[Dict[str, Any]]] = None
+                      ) -> Dict[str, Any]:
     by_group = sim.get("by_group", [])
     tables, reached, total = [], 0.0, 0.0
     for gtype, title in (("household_type", "By household type"),
@@ -519,6 +544,7 @@ def impact_breakdowns(sim: Dict[str, Any], understood: str,
             for g in rows:
                 total += g["households_weighted"]
                 reached += g["households_weighted"] * g["pct_better_off"]
+    tables += list(extra_tables or [])
     n = sim["n_households"]
     return {
         "question": {"wording": understood,
@@ -570,6 +596,7 @@ def answer_policy_simulation(spec, question):
     # sampling noise in the level. See _band in model/engine.py.
     chg, chg_lo, chg_hi = (cpr["change_median"], cpr["change_p05"],
                            cpr["change_p95"])
+    cross = sim["impact"]["poverty_crossings"]
     spec = {**spec, "outcome": "Change in DC child poverty rate"}
     return result(
         spec, question,
@@ -580,7 +607,12 @@ def answer_policy_simulation(spec, question):
             f"PUMS, {sim['n_seeds']} parameter draws. Child poverty in DC goes "
             f"from {100 * base:.1f}% to {100 * med:.1f}%, and the transfer "
             f"costs ${sim['impact']['annual_cost_usd']['median'] / 1e6:,.0f}M a "
-            f"year in DC."),
+            f"year in DC. "
+            + (f"It lifts {cross['leaving_people']:,.0f} people above the "
+               f"federal poverty line, {cross['leaving_children']:,.0f} of them "
+               f"children. " if cross["leaving_people"] >= 1 else "")
+            + ("A rate is an average; this is the count of people who actually "
+               "cross the line, which is the number the rate is made of.")),
         estimate={"kind": "percentage_point_change",
                   "value": round(100 * chg, 2), "unit": "points",
                   # Spelled out, because the front end's default formatter
@@ -644,6 +676,117 @@ OTR_EVIDENCE = {
 }
 
 
+# The survey evidence base holds cash transfers only -- the 2021 expanded CTC,
+# the 2021 stimulus payments, UBI and the ARP package. Nothing in it was ever
+# asked about a tax increase, so no support estimate is offered for one. This
+# is the in_support: false state, stated in words rather than extrapolated from
+# polling about a different policy.
+OPINION_COVERAGE = (
+    "No public-support estimate is offered. The opinion evidence holds polling "
+    "on cash transfers -- the 2021 expanded Child Tax Credit, the 2021 stimulus "
+    "payments, universal basic income and the American Rescue Plan -- and none "
+    "of it asked about a tax increase, in DC or anywhere. Poststratifying "
+    "transfer polling onto a tax question would be a support number for a "
+    "policy nobody was surveyed on.")
+
+
+def tax_facts(sim: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """The measured tax figures, in the fact-pack shape, so the side-effects
+    paragraph is written against numbers rather than around them."""
+    rev = sim["annual_revenue_usd"]
+    pushed = sim["pushed_into_poverty"]
+    top = max(sim["burden_by_income"], key=lambda b: b["share_of_revenue"])
+    out = [
+        F.fact("tax_revenue", "Annual DC revenue from the change",
+               rev["median"], f"${abs(rev['median']) / 1e9:,.2f} billion a year",
+               F.SIM),
+        F.fact("tax_base", "Current DC individual income tax base",
+               sim["baseline_liability_usd"],
+               f"${sim['baseline_liability_usd'] / 1e9:,.2f} billion a year", F.SIM),
+        F.fact("tax_paying_more", "DC households whose liability rises",
+               sim["households_paying_more"],
+               f"{sim['households_paying_more']:,.0f} of "
+               f"{sim['households_total']:,.0f} households", F.SIM),
+        F.fact("tax_pushed_poverty",
+               "People moved below the federal poverty line by the change",
+               pushed["people"], f"{pushed['people']:,.0f} people "
+               f"({pushed['records']} ACS records)", F.SIM),
+        F.fact("tax_revenue_concentration",
+               f"Share of the revenue coming from the {top['group']} income group",
+               top["share_of_revenue"],
+               f"{100 * top['share_of_revenue']:.1f}% of the total", F.SIM),
+        # Figures the answer itself prints. Without them here the model gets
+        # flagged for repeating a number the reader can see two lines above,
+        # and the whole section is thrown away over a false positive.
+        F.fact("tax_share_paying_more",
+               "Share of DC households whose liability rises",
+               sim["households_paying_more"] / sim["households_total"],
+               f"{100 * sim['households_paying_more'] / sim['households_total']:.0f}%"
+               f" of households", F.SIM),
+        F.fact("tax_child_poverty_change",
+               "Change in the DC child poverty rate",
+               sim["impact"]["child_poverty_rate"]["change_median"],
+               f"{100 * sim['impact']['child_poverty_rate']['change_median']:+.2f}"
+               f" percentage points", F.SIM),
+    ]
+    for b in sim["burden_by_income"]:
+        out.append(F.fact(
+            f"tax_burden_{b['group']}",
+            f"Share of its own income taken from the {b['group']} income group",
+            b["share_of_income"], f"{100 * b['share_of_income']:.2f}% of income",
+            F.SIM))
+    return out
+
+
+def tax_side_effects(sim: Dict[str, Any], understood: str) -> Optional[str]:
+    """What might follow, argued from the measured figures only.
+
+    The reasoning layer is bound by the same rule as everywhere else: it may
+    state the numbers in the fact pack and no others. So it can say the revenue
+    is concentrated in the top fifth and reason about what that exposes, and it
+    cannot produce a migration elasticity, an approval rating, or a job-loss
+    figure -- because we hold none of those.
+    """
+    if not R.available():
+        return None
+    facts = tax_facts(sim) + F.baseline()
+    question = (
+        f"Policy: {understood}. The revenue and distributional figures are "
+        f"measured and given. What are the likely side effects and political "
+        f"risks in Washington DC specifically -- who would object, what "
+        f"behavioural response is plausible given the District's size and its "
+        f"borders with Maryland and Virginia, and what could go wrong that the "
+        f"revenue figure does not capture? Do not estimate the size of any "
+        f"response; we hold no elasticity and no polling on this.")
+    got, _notes = R.reason(question, {"kind": "tax_policy"}, facts, timeout=45.0)
+    if not got:
+        return None
+    text = " ".join(x for x in (got.get("answer"), got.get("mechanism"),
+                                got.get("affected")) if x).strip()
+    return text or None
+
+
+def tax_side_effects_measured(sim: Dict[str, Any]) -> str:
+    """The side-effects section without the reasoning model.
+
+    It runs whenever the model is absent or would not stay inside the evidence,
+    so the section never silently disappears -- a missing paragraph reads as
+    the system having nothing to say, when in fact the exposure is measured.
+    """
+    top = max(sim["burden_by_income"], key=lambda b: b["share_of_revenue"])
+    return (
+        f"The measured exposure: {100 * top['share_of_revenue']:.0f}% of the "
+        f"revenue comes from the {GROUP_LABEL.get(top['group'], top['group'])} "
+        f"alone, so the yield depends on that group staying and continuing to "
+        f"report income in the District. How much of it would respond by "
+        f"moving, working less or shifting income is not modelled and is not "
+        f"estimated here: no elasticity for DC is held, and DC is an unusual "
+        f"case for one, being small enough that a move across the Maryland or "
+        f"Virginia line need not change anybody's commute. Nor is any approval "
+        f"figure offered, because the opinion evidence is polling about cash "
+        f"transfers and nobody in it was asked about a tax.")
+
+
 def answer_tax_policy(spec, question):
     """Simulate a change to the DC income tax schedule."""
     points = spec.get("taxChangePoints")
@@ -668,6 +811,12 @@ def answer_tax_policy(spec, question):
     verb = "raises" if raising else "returns"
     verb_past = "raised" if raising else "returned"
     share_paying = sim["households_paying_more"] / sim["households_total"]
+    pushed = sim["pushed_into_poverty"]
+    burden = sim["burden_by_income"]
+    top = max(burden, key=lambda b: b["share_of_revenue"])
+    lo, hi = burden[0], burden[-1]
+    side = tax_side_effects(sim, sim["understood"]) or \
+        tax_side_effects_measured(sim)
 
     return result(
         spec, question,
@@ -682,9 +831,17 @@ def answer_tax_policy(spec, question):
             f"{sim['households_paying_more']:,.0f} households "
             f"({100 * share_paying:.0f}%) owe more; the rest owe nothing extra "
             f"because their taxable income is below the standard deduction. "
-            f"Child poverty moves {100 * cpr['change_median']:+.2f} points, "
-            f"because households under the poverty line have little or no "
-            f"taxable income to begin with."),
+            f"WHO CARRIES IT: the {lo['group']} income group gives up "
+            f"{100 * lo['share_of_income']:.2f}% of its income and the "
+            f"{hi['group']} group {100 * hi['share_of_income']:.2f}%, so the "
+            f"change is progressive in share-of-income terms, and "
+            f"{100 * top['share_of_revenue']:.0f}% of the money comes from the "
+            f"{top['group']} group alone. Child poverty moves "
+            f"{100 * cpr['change_median']:+.2f} points and "
+            f"{pushed['people']:,.0f} people cross the federal poverty line, "
+            f"because households under it have little or no taxable income to "
+            f"begin with. "
+            + (f"SIDE EFFECTS: {side}" if side else "")),
         estimate={"kind": "annual_revenue", "value": round(rev["median"], 0),
                   "unit": "dollars",
                   "displayValue": f"${abs(rev['median']) / 1e9:,.2f}B a year",
@@ -707,18 +864,30 @@ def answer_tax_policy(spec, question):
             share_note="The share paying more is the share of the group whose "
                        "DC liability rises at all. The dollar figure is the "
                        "average change in disposable income across the whole "
-                       "group, including those who owe nothing extra."),
+                       "group, including those who owe nothing extra.",
+            extra_tables=[revenue_source_table(burden)]),
         evidence=[OTR_EVIDENCE] + evidence_for("household_income"),
         missingEvidence=[
+            "Polling on a DC income tax increase. The opinion evidence covers "
+            "cash transfers only, so no approval or disapproval figure is "
+            "produced for this.",
+            "A migration or labour-supply elasticity for DC. Without one, the "
+            "risk that revenue concentrated in the top fifth walks across the "
+            "Maryland or Virginia line can be described but not sized.",
             "A revenue estimate from the DC Chief Financial Officer, which "
             "would incorporate behavioural response and administrative data",
             "Itemised deduction and credit take-up, to net down liability",
         ],
         limitations=list(sim["warnings"]) + [
+            OPINION_COVERAGE,
             "The DC schedule is the published one, retrieved from the Office "
             "of Tax and Revenue and checked at import: every bracket's base "
             "amount must equal the tax accumulated below it.",
-        ],
+        ] + ([
+            "The side-effects paragraph is reasoning, not measurement. It is "
+            "written against the figures above and may not state any number "
+            "that is not among them; it therefore names no elasticity, "
+            "approval rating or job-loss figure, because we hold none."]),
         validation={"description":
                     "The rate schedule reproduces every published bracket "
                     "boundary exactly ($400 at $10,000 through $91,525 at "

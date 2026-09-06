@@ -114,6 +114,10 @@ def engine_invariants(pop):
     for scope, mask in [("national", None)] + [(m, k) for m, k in pop.metro_masks.items()]:
         o = E.outcomes_for(pop, t5, y5, mask)
         for key, band in o.items():
+            # impact carries poverty_crossings alongside the bands: counts of
+            # households moving across the line, which have no percentiles.
+            if "p05" not in band:
+                continue
             if not (band["p05"] <= band["median"] <= band["p95"]):
                 ok = False
                 print(f"        ordering violated: {scope}/{key} {band}")

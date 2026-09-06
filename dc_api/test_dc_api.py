@@ -400,7 +400,8 @@ def test_the_tax_answer_reports_who_pays_it():
     sa = r["surveyAnalysis"]
     assert sa["summaryLabel"] == "Who pays it, by group"
     for b in sa["breakdowns"]:
-        assert "Share paying more" in b["columns"]
+        if b["label"] in ("By household type", "By income group"):
+            assert "Share paying more" in b["columns"]
     assert any("Office of Tax and Revenue" in e["publisher"] for e in r["evidence"])
 
 
@@ -416,3 +417,67 @@ def test_the_change_interval_is_paired_not_a_difference_of_levels():
     paired = c["change_p95"] - c["change_p05"]
     assert paired < naive, "pairing must remove the common sampling variation"
     assert c["change_p05"] <= c["change_median"] <= c["change_p95"]
+
+
+# --- who carries it, and what might follow ---------------------------------
+def test_a_transfer_lifts_people_over_the_line_and_pushes_nobody_under():
+    from app.local_parser import parse
+    from dc_api.dc_engine import run_dc
+    c = run_dc(parse("$400 a month per child under 6 in DC").levers,
+               seeds=120)["impact"]["poverty_crossings"]
+    assert c["leaving_people"] > 0
+    assert c["entering_people"] == 0, "money cannot push a household under"
+    assert c["leaving_children"] <= c["leaving_people"]
+
+
+def test_a_tax_rise_pushes_nobody_over_the_line_upward():
+    """A tax takes money away, so nobody can cross OUT of poverty because of
+    it. The reverse direction is the one to watch."""
+    c = _tax(5.0)["impact"]["poverty_crossings"]
+    assert c["leaving_people"] == 0
+
+
+def test_the_burden_gradient_and_the_revenue_concentration_disagree():
+    """Share of income says who feels it; share of revenue says what the policy
+    depends on. Both are reported because they are different questions."""
+    sim = _tax(5.0)
+    b = {x["group"]: x for x in sim["burden_by_income"]}
+    assert b["Q1"]["share_of_income"] < b["Q5"]["share_of_income"]
+    assert b["Q5"]["share_of_revenue"] > 0.4
+    assert abs(sum(x["share_of_revenue"] for x in sim["burden_by_income"]) - 1) < 0.02
+
+
+def test_the_tax_answer_shows_where_the_revenue_comes_from():
+    r = ask("what if DC raised income tax by 5%")
+    labels = [b["label"] for b in r["surveyAnalysis"]["breakdowns"]]
+    assert "Where the revenue comes from" in labels
+    table = next(b for b in r["surveyAnalysis"]["breakdowns"]
+                 if b["label"] == "Where the revenue comes from")
+    assert "Share of the revenue" in table["columns"]
+    assert sum(g["share"] for g in table["groups"]) == pytest.approx(1.0, abs=0.02)
+
+
+def test_no_support_figure_is_produced_for_a_tax():
+    """The opinion evidence is cash-transfer polling. Poststratifying it onto a
+    tax question would report support for a policy nobody was asked about."""
+    r = ask("what if DC raised income tax by 5%")
+    joined = " ".join(r["limitations"])
+    assert "No public-support estimate is offered" in joined
+    assert any("Polling on a DC income tax increase" in m
+               for m in r["missingEvidence"])
+
+
+def test_the_side_effects_section_never_disappears():
+    """It is written by the reasoning model when that succeeds and assembled
+    from the measured exposure when it does not. A missing section reads as
+    the system having nothing to say, when the exposure is measured."""
+    r = ask("what if DC raised income tax by 5%")      # offline: the fallback
+    assert "SIDE EFFECTS:" in r["explanation"]
+    assert "% of the revenue comes from" in r["explanation"]
+    assert "not modelled" in r["explanation"]
+
+
+def test_the_answer_states_who_carries_it():
+    r = ask("what if DC raised income tax by 5%")
+    assert "WHO CARRIES IT:" in r["explanation"]
+    assert "% of its income" in r["explanation"]

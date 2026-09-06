@@ -329,7 +329,22 @@ def outcomes_for(pop, transfer, new_income, mask=None, boot=None):
 
     cost = (t * dw_s).sum(1)
 
+    # Households that CROSS the line, in each direction. An aggregate rate can
+    # barely move while individual households cross both ways, and "how many
+    # people did this lift out" is the question a rate change does not answer.
+    entering = (poor & ~base_poor[None, :])
+    leaving = (~poor & base_poor[None, :])
+    crossings = {
+        "entering_people": float(np.median((entering * pw_s).sum(1))),
+        "leaving_people": float(np.median((leaving * pw_s).sum(1))),
+        "entering_children": float(np.median((entering * cw_s).sum(1))),
+        "leaving_children": float(np.median((leaving * cw_s).sum(1))),
+        "entering_households": float(np.median((entering * dw_s).sum(1))),
+        "leaving_households": float(np.median((leaving * dw_s).sum(1))),
+    }
+
     return {
+        "poverty_crossings": crossings,
         "child_poverty_rate": _band(child_rate, child_base, child_base_draws),
         "overall_poverty_rate": _band(all_rate, all_base, all_base_draws),
         "median_disposable_income": _band(med, med_base, med_base_draws),
