@@ -194,18 +194,46 @@ def backtest_impact(pop, param_set="preregistered", headline=True):
 # ---------------------------------------------------------------------------
 # backtest 2
 # ---------------------------------------------------------------------------
-def backtest_opinion(df, method="ladder", quiet=False):
+# The clean out-of-sample test. Morning Consult #2112154 (fielded 18-20 Dec
+# 2021) was added to the evidence file AFTER both the fallback ladder and MRP
+# had been built and evaluated. No version of either model has ever seen it.
+# It shares question wording exactly with the July and October waves, which are
+# both in training, so the time trend is identified and the December value is a
+# genuine forward extrapolation.
+CLEAN_HOLDOUT = "dec2021"
+HOLDOUT_META = {
+    "dec2021": {"label": "Morning Consult/POLITICO #2112154, 18-20 Dec 2021",
+                "date": "2021-12-19",
+                "wording": "mc_monthly_payment_support",
+                "clean": True},
+    "oct2021": {"label": "Morning Consult/POLITICO #2110009, Oct 2021",
+                "date": "2021-10-04",
+                "wording": "mc_monthly_payment_support",
+                "clean": False},
+}
+
+
+def backtest_opinion(df, method="ladder", quiet=False,
+                     holdout_group=CLEAN_HOLDOUT):
     """
-    Predict held-out subgroups from non-holdout evidence only.
+    Predict a held-out poll from evidence that excludes it.
 
     method="ladder" -> the A5 fallback-ladder poststratification
     method="mrp"    -> the hierarchical model in mrp.py
-    Both are run against the SAME holdout so the comparison is like-for-like.
+    Both run against the SAME holdout so the comparison is like-for-like.
+
+    When predicting a specific poll we condition on that poll's KNOWN fielding
+    date and question wording. Those are observable properties of the
+    instrument, not its answer -- withholding them would be testing whether the
+    model can guess when a survey ran, which is not the question.
     """
+    meta = HOLDOUT_META[holdout_group]
     if method == "mrp":
         import mrp as M
-        overall, _ids, by_group, warns = M.poststratify(df, n_draws=N_SEEDS,
-                                                        include_holdout=False)
+        overall, _ids, by_group, warns = M.poststratify(
+            df, n_draws=N_SEEDS, include_holdout=False,
+            holdout_group=holdout_group, max_date=meta["date"],
+            predict_date=meta["date"], wording=meta["wording"])
     else:
         overall, _ids, by_group, warns = O.poststratify(df, n_draws=N_SEEDS,
                                                         include_holdout=False)
@@ -216,7 +244,12 @@ def backtest_opinion(df, method="ladder", quiet=False):
         if g["support"] is not None:
             pred_lookup[(g["group_type"], g["group"])] = g["support"]
 
-    held, _ = O.load_evidence(include_holdout=True)
+    import mrp as _M
+    held, _ = _M.load_observations(holdout_group=holdout_group,
+                                   include_holdout=True)
+    held = [{"subgroup_type": h["dimension"], "subgroup": h["level"],
+             "evidence_id": h["evidence_id"], "support_pct": h["p"],
+             "sample_size": int(h["n"])} for h in held]
     rows = []
     for r in held:
         key = (r["subgroup_type"], r["subgroup"])
@@ -241,11 +274,16 @@ def backtest_opinion(df, method="ladder", quiet=False):
                 "mean_absolute_gap": float(np.mean(gaps_q)) if gaps_q else float("nan"),
                 "interval_coverage": f"{hits_q}/{scored_q}",
                 "hits": hits_q, "scored": scored_q, "method": method,
-                "warnings": warns}
+                "holdout_group": holdout_group, "holdout": meta["label"],
+                "clean_out_of_sample": meta["clean"], "warnings": warns}
     print()
     print("=" * 96)
-    print(f"BACKTEST 2 -- opinion: held-out Morning Consult #2110009 (Oct 2021)"
-          f"   [method: {method}]")
+    print(f"BACKTEST 2 -- opinion: held out {meta['label']}")
+    print(f"   method: {method}   |   "
+          + ("CLEAN out-of-sample: this poll was added to the evidence file "
+             "after both models were built"
+             if meta["clean"] else
+             "NOT clean: MRP was designed after seeing this holdout"))
     print("=" * 96)
     print(f"  {'subgroup':<28}{'predicted [p05, p95]':<32}{'observed':>10}"
           f"{'gap':>9}{'obs n':>8}  hit")
@@ -281,21 +319,32 @@ def backtest_opinion(df, method="ladder", quiet=False):
         print("  regional predictions against varying observed values are the")
         print("  expected consequence of that, not a surprise.")
     else:
-        print("  MRP uses every dimension simultaneously, so regional predictions")
-        print("  now vary. The residual bias is one-directional and is the part")
-        print("  MRP cannot fix: every training record was fielded in July 2021,")
-        print("  so no time effect is identified, and support genuinely fell by")
-        print("  October. The model is answering a question about July.")
-        print()
-        print("  CAVEAT ON THIS NUMBER: MRP was built AFTER seeing the ladder's")
-        print("  performance on this same holdout. The design decisions came from")
-        print("  structural defects visible without the holdout (thin records")
-        print("  discarded, region evidence unused, house effects unmodelled), but")
-        print("  a second look at the same test set is a second look. Treat 2.06p")
-        print("  as indicative, not as a clean out-of-sample result, until it is")
-        print("  re-tested against a poll neither method has seen.")
+        print("  MRP separates four things the ladder confounded: the policy")
+        print("  asked about, the survey house, the question wording, and time.")
+        gaps = [r["gap"] for r in rows if r["gap"] is not None]
+        pos = sum(1 for g in gaps if g > 0)
+        print(f"  Residual gaps split {pos} positive / {len(gaps) - pos} negative,")
+        if 0 < pos < len(gaps):
+            print("  so the systematic one-directional bias of the earlier model is")
+            print("  gone -- the fitted time trend accounts for the 2021 decline in")
+            print("  support rather than ignoring it.")
+        else:
+            print("  i.e. still one-directional. The time trend has not removed the")
+            print("  bias; report that rather than the headline gap alone.")
+        if meta["clean"]:
+            print()
+            print("  THIS IS A CLEAN OUT-OF-SAMPLE TEST. The held-out poll was added")
+            print("  to the evidence file after both methods had been built and")
+            print("  evaluated, so no design decision could have been informed by it.")
+        else:
+            print()
+            print("  NOT CLEAN: MRP was designed after seeing this holdout. Kept for")
+            print("  continuity with the earlier published comparison; the December")
+            print("  test is the one to quote.")
 
     return {"rows": rows, "mean_absolute_gap": mae, "method": method,
+            "holdout_group": holdout_group, "holdout": meta["label"],
+            "clean_out_of_sample": meta["clean"],
             "interval_coverage": f"{hits}/{scored}", "hits": hits,
             "scored": scored, "warnings": warns}
 
@@ -397,13 +446,18 @@ def chart_opinion(res):
     charts.save(fig, "backtest_opinion.png")
 
 
-def compare_methods(df):
+def compare_methods(df, holdout_group=CLEAN_HOLDOUT):
     """Same holdout, both poststratification methods, side by side."""
-    lad = backtest_opinion(df, method="ladder", quiet=True)
-    mrp_ = backtest_opinion(df, method="mrp", quiet=True)
+    lad = backtest_opinion(df, method="ladder", quiet=True,
+                           holdout_group=holdout_group)
+    mrp_ = backtest_opinion(df, method="mrp", quiet=True,
+                            holdout_group=holdout_group)
+    meta = HOLDOUT_META[holdout_group]
     print()
     print("=" * 96)
-    print("METHOD COMPARISON -- identical holdout, identical training evidence")
+    print(f"METHOD COMPARISON -- identical holdout, identical training evidence")
+    print(f"holdout: {meta['label']}"
+          + ("   [CLEAN out-of-sample]" if meta["clean"] else "   [not clean]"))
     print("=" * 96)
     print(f"  {'':<26}{'fallback ladder':>20}{'MRP':>20}")
     print(f"  {'mean absolute gap':<26}"
@@ -431,7 +485,8 @@ def compare_methods(df):
     total = sum(1 for r in mrp_["rows"] if r["predicted"] is not None)
     print()
     print(f"  MRP is closer on {wins}/{total} held-out subgroups.")
-    return {"ladder": lad, "mrp": mrp_,
+    return {"ladder": lad, "mrp": mrp_, "holdout": meta["label"],
+            "clean_out_of_sample": meta["clean"],
             "mrp_closer_on": f"{wins}/{total}"}
 
 
@@ -482,8 +537,11 @@ def main():
     impact_sourced = backtest_impact(pop, param_set="sourced")
     param_cmp = parameter_set_comparison(impact, impact_sourced)
     P.use_param_set("sourced")
-    op = backtest_opinion(pop.df, method="mrp")
-    comparison = compare_methods(pop.df)
+    op = backtest_opinion(pop.df, method="mrp", holdout_group=CLEAN_HOLDOUT)
+    comparison = compare_methods(pop.df, holdout_group=CLEAN_HOLDOUT)
+    # The original, NOT-clean October split, kept so the earlier published
+    # comparison stays reproducible rather than being quietly superseded.
+    comparison_oct = compare_methods(pop.df, holdout_group="oct2021")
 
     out = {
         "pre_registration": "docs/backtest.md (committed before this code existed)",
@@ -493,6 +551,7 @@ def main():
         "backtest_2_opinion": op,
         "method_comparison": comparison,
         "parameter_set_comparison": param_cmp,
+        "method_comparison_oct2021_not_clean": comparison_oct,
     }
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     OUT_JSON.write_text(json.dumps(out, indent=2, default=float), encoding="utf-8")

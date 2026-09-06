@@ -678,11 +678,13 @@
     "Poststratification method: mrp.",
     "ev_dfp_parents: no sample_size published, so no observation variance can be computed. Dropped (NOT imputed).",
     "ev_dfp_nonparents: no sample_size published, so no observation variance can be computed. Dropped (NOT imputed).",
-    "MRP fitted on 16 crosstab observations across 2 dimension(s): census_region, income_band. Partial pooling, so no MIN_EVIDENCE_N exclusion is applied -- 2 thin record(s) are USED at reduced weight: ev_yg2107_inc_100p, ev_yg2107_reg_ne.",
-    "Estimated survey house effects (logit scale, median): morning_consult +0.049; yougov_economist -0.049. Spread 0.098 logits ~ 2.5 points at the midpoint -- instrument effect, removed from the population estimate.",
-    "Between-level SD for census_region: 0.102 logits (median posterior).",
-    "Between-level SD for income_band: 0.038 logits (median posterior).",
-    "No usable evidence on: household_type. These dimensions are EXCLUDED from the model rather than imputed, and groups defined on them report insufficient_evidence.",
+    "21 record(s) about a different policy were excluded by policy_key. Pooling them into a 'ctc_2021' estimate would mix answers to different questions about different policies.",
+    "MRP fitted on 72 crosstab observations for policy 'ctc_2021', across 2 dimension(s) (census_region, income_band), 2 survey house(s), 5 question wording(s) and 9 fielding date(s) (2021-02-20 to 2021-12-19). No MIN_EVIDENCE_N exclusion is applied; 8 thin record(s) are USED at reduced weight.",
+    "Support is reported as of 2021-12-19, averaged over question wordings.",
+    "Fitted time trend: -0.0433 logits/month [-0.0514, -0.0345]. Identified from repeated-wording waves; treat as an extrapolation outside the observed window.",
+    "Survey house effects (logit scale, median): morning_consult +0.006; yougov_economist -0.006. Spread 0.012 logits -- instrument effect, removed from the population estimate.",
+    "Between-wording SD: 0.262 logits. Between-level SD for census_region: 0.093; Between-level SD for income_band: 0.005",
+    "No usable evidence on: household_type. Excluded from the model rather than imputed; groups defined on them report insufficient_evidence.",
     "Policy is outside the evidence base: nearest known policy is 'Expanded Child Tax Credit (2021)' at normalised lever distance 4.468 (threshold 1.5). No support estimate is produced."
   ],
   "induced_consumption_usd": {

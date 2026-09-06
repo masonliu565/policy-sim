@@ -72,137 +72,142 @@
       {
         "subgroup_type": "national",
         "subgroup": "national",
-        "evidence_id": "ev_mc2110_nat",
-        "observed": 0.5,
+        "evidence_id": "ev_mc2112_nat_national",
+        "observed": 0.49,
         "observed_n": 1998,
-        "observed_se": 0.011185934253567072,
+        "observed_se": 0.01118369684295292,
         "predicted": {
-          "median": 0.525238868237687,
-          "p05": 0.5108290694358576,
-          "p95": 0.5445262942506505
+          "median": 0.4602986545544905,
+          "p05": 0.40101827252638816,
+          "p95": 0.5001303465894623
         },
-        "gap": 0.02523886823768695,
-        "observed_inside_interval": false
+        "gap": -0.02970134544550951,
+        "observed_inside_interval": true
       },
       {
         "subgroup_type": "income_band",
         "subgroup": "under_50k",
-        "evidence_id": "ev_mc2110_inc_lt50",
-        "observed": 0.5,
-        "observed_n": 882,
-        "observed_se": 0.016835875742536845,
+        "evidence_id": "ev_mc2112_inc_under_50k",
+        "observed": 0.51,
+        "observed_n": 868,
+        "observed_se": 0.016967711271896738,
         "predicted": {
-          "median": 0.5279747379148929,
-          "p05": 0.508280797266292,
-          "p95": 0.5546074162345991
+          "median": 0.4596854547611814,
+          "p05": 0.39856470168995,
+          "p95": 0.4977023026129226
         },
-        "gap": 0.02797473791489291,
+        "gap": -0.05031454523881862,
         "observed_inside_interval": false
       },
       {
         "subgroup_type": "income_band",
         "subgroup": "50k_to_100k",
-        "evidence_id": "ev_mc2110_inc_50_100",
-        "observed": 0.5,
-        "observed_n": 723,
-        "observed_se": 0.018595200082640043,
+        "evidence_id": "ev_mc2112_inc_50k_to_100k",
+        "observed": 0.49,
+        "observed_n": 725,
+        "observed_se": 0.018565819539476672,
         "predicted": {
-          "median": 0.5143715121918091,
-          "p05": 0.4841211050310581,
-          "p95": 0.5325538187110667
+          "median": 0.4590124236501806,
+          "p05": 0.39955713170940665,
+          "p95": 0.4983175728500253
         },
-        "gap": 0.0143715121918091,
+        "gap": -0.030987576349819412,
         "observed_inside_interval": true
       },
       {
         "subgroup_type": "income_band",
         "subgroup": "100k_plus",
-        "evidence_id": "ev_mc2110_inc_100p",
-        "observed": 0.52,
-        "observed_n": 392,
-        "observed_se": 0.02523360247522242,
+        "evidence_id": "ev_mc2112_inc_100k_plus",
+        "observed": 0.44,
+        "observed_n": 405,
+        "observed_se": 0.02466566564535397,
         "predicted": {
-          "median": 0.5300210644508574,
-          "p05": 0.5125391867930033,
-          "p95": 0.5613293285441892
+          "median": 0.4615955133692392,
+          "p05": 0.4029628449500011,
+          "p95": 0.502541560708923
         },
-        "gap": 0.010021064450857375,
+        "gap": 0.021595513369239205,
         "observed_inside_interval": true
       },
       {
         "subgroup_type": "census_region",
         "subgroup": "Northeast",
-        "evidence_id": "ev_mc2110_reg_ne",
-        "observed": 0.53,
+        "evidence_id": "ev_mc2112_cen_northeast",
+        "observed": 0.57,
         "observed_n": 353,
-        "observed_se": 0.026564369414303877,
+        "observed_se": 0.026350223483310283,
         "predicted": {
-          "median": 0.535571569536083,
-          "p05": 0.5107317466368202,
-          "p95": 0.5642559592616109
+          "median": 0.4705646129612888,
+          "p05": 0.40776379374012073,
+          "p95": 0.5122232374546412
         },
-        "gap": 0.005571569536082954,
-        "observed_inside_interval": true
+        "gap": -0.09943538703871113,
+        "observed_inside_interval": false
       },
       {
         "subgroup_type": "census_region",
         "subgroup": "Midwest",
-        "evidence_id": "ev_mc2110_reg_mw",
-        "observed": 0.49,
+        "evidence_id": "ev_mc2112_cen_midwest",
+        "observed": 0.42,
         "observed_n": 444,
-        "observed_se": 0.023724203629159776,
+        "observed_se": 0.02342325017260945,
         "predicted": {
-          "median": 0.497070316304775,
-          "p05": 0.46193142952131816,
-          "p95": 0.5343554016953289
+          "median": 0.44843491291007176,
+          "p05": 0.38776577847774507,
+          "p95": 0.49031699175519755
         },
-        "gap": 0.007070316304775004,
+        "gap": 0.028434912910071775,
         "observed_inside_interval": true
       },
       {
         "subgroup_type": "census_region",
         "subgroup": "South",
-        "evidence_id": "ev_mc2110_reg_s",
-        "observed": 0.48,
+        "evidence_id": "ev_mc2112_cen_south",
+        "observed": 0.46,
         "observed_n": 746,
-        "observed_se": 0.018291649745229236,
+        "observed_se": 0.018247626456985383,
         "predicted": {
-          "median": 0.5228744315944983,
-          "p05": 0.49934738378191007,
-          "p95": 0.5438111675676924
+          "median": 0.45526604016860406,
+          "p05": 0.3945418717754238,
+          "p95": 0.4962361146337922
         },
-        "gap": 0.04287443159449833,
-        "observed_inside_interval": false
+        "gap": -0.004733959831395962,
+        "observed_inside_interval": true
       },
       {
         "subgroup_type": "census_region",
         "subgroup": "West",
-        "evidence_id": "ev_mc2110_reg_w",
-        "observed": 0.52,
+        "evidence_id": "ev_mc2112_cen_west",
+        "observed": 0.55,
         "observed_n": 455,
-        "observed_se": 0.023421601750764794,
+        "observed_se": 0.023322865260427244,
         "predicted": {
-          "median": 0.5514948496547858,
-          "p05": 0.5253302373507702,
-          "p95": 0.5794950684667269
+          "median": 0.47205747872071,
+          "p05": 0.4133349761159956,
+          "p95": 0.5152005748629487
         },
-        "gap": 0.03149484965478577,
+        "gap": -0.07794252127929002,
         "observed_inside_interval": false
       }
     ],
-    "mean_absolute_gap": 0.02057716873567355,
+    "mean_absolute_gap": 0.042893220182856955,
     "method": "mrp",
-    "interval_coverage": "4/8",
-    "hits": 4,
+    "holdout_group": "dec2021",
+    "holdout": "Morning Consult/POLITICO #2112154, 18-20 Dec 2021",
+    "clean_out_of_sample": true,
+    "interval_coverage": "5/8",
+    "hits": 5,
     "scored": 8,
     "warnings": [
       "ev_dfp_parents: no sample_size published, so no observation variance can be computed. Dropped (NOT imputed).",
       "ev_dfp_nonparents: no sample_size published, so no observation variance can be computed. Dropped (NOT imputed).",
-      "MRP fitted on 16 crosstab observations across 2 dimension(s): census_region, income_band. Partial pooling, so no MIN_EVIDENCE_N exclusion is applied -- 2 thin record(s) are USED at reduced weight: ev_yg2107_inc_100p, ev_yg2107_reg_ne.",
-      "Estimated survey house effects (logit scale, median): morning_consult +0.049; yougov_economist -0.049. Spread 0.098 logits ~ 2.5 points at the midpoint -- instrument effect, removed from the population estimate.",
-      "Between-level SD for census_region: 0.102 logits (median posterior).",
-      "Between-level SD for income_band: 0.038 logits (median posterior).",
-      "No usable evidence on: household_type. These dimensions are EXCLUDED from the model rather than imputed, and groups defined on them report insufficient_evidence."
+      "21 record(s) about a different policy were excluded by policy_key. Pooling them into a 'ctc_2021' estimate would mix answers to different questions about different policies.",
+      "MRP fitted on 64 crosstab observations for policy 'ctc_2021', across 2 dimension(s) (census_region, income_band), 2 survey house(s), 5 question wording(s) and 8 fielding date(s) (2021-02-20 to 2021-10-04). No MIN_EVIDENCE_N exclusion is applied; 8 thin record(s) are USED at reduced weight.",
+      "Support is reported as of 2021-12-19, using the 'mc_monthly_payment_support' question wording.",
+      "Fitted time trend: -0.0510 logits/month [-0.0622, -0.0400]. Identified from repeated-wording waves; treat as an extrapolation outside the observed window.",
+      "Survey house effects (logit scale, median): morning_consult +0.037; yougov_economist -0.037. Spread 0.075 logits -- instrument effect, removed from the population estimate.",
+      "Between-wording SD: 0.287 logits. Between-level SD for census_region: 0.053; Between-level SD for income_band: 0.005",
+      "No usable evidence on: household_type. Excluded from the model rather than imputed; groups defined on them report insufficient_evidence."
     ]
   },
   "method_comparison": {
@@ -211,136 +216,150 @@
         {
           "subgroup_type": "national",
           "subgroup": "national",
-          "evidence_id": "ev_mc2110_nat",
-          "observed": 0.5,
+          "evidence_id": "ev_mc2112_nat_national",
+          "observed": 0.49,
           "observed_n": 1998,
-          "observed_se": 0.011185934253567072,
+          "observed_se": 0.01118369684295292,
           "predicted": {
-            "median": 0.5398173575213021,
-            "p05": 0.5338823271255982,
-            "p95": 0.5462192776770057
+            "median": 0.6152429923857657,
+            "p05": 0.6121380312226254,
+            "p95": 0.6185103898847254
           },
-          "gap": 0.03981735752130211,
+          "gap": 0.12524299238576575,
           "observed_inside_interval": false
         },
         {
           "subgroup_type": "income_band",
           "subgroup": "under_50k",
-          "evidence_id": "ev_mc2110_inc_lt50",
-          "observed": 0.5,
-          "observed_n": 882,
-          "observed_se": 0.016835875742536845,
+          "evidence_id": "ev_mc2112_inc_under_50k",
+          "observed": 0.51,
+          "observed_n": 868,
+          "observed_se": 0.016967711271896738,
           "predicted": {
-            "median": 0.548342070975395,
-            "p05": 0.5422558591356618,
-            "p95": 0.5543130126086544
+            "median": 0.6090873187690696,
+            "p05": 0.6066714163659215,
+            "p95": 0.6114574650309325
           },
-          "gap": 0.048342070975395,
+          "gap": 0.09908731876906962,
           "observed_inside_interval": false
         },
         {
           "subgroup_type": "income_band",
           "subgroup": "50k_to_100k",
-          "evidence_id": "ev_mc2110_inc_50_100",
-          "observed": 0.5,
-          "observed_n": 723,
-          "observed_se": 0.018595200082640043,
+          "evidence_id": "ev_mc2112_inc_50k_to_100k",
+          "observed": 0.49,
+          "observed_n": 725,
+          "observed_se": 0.018565819539476672,
           "predicted": {
-            "median": 0.5015358846259423,
-            "p05": 0.495121381824926,
-            "p95": 0.5082886360438131
+            "median": 0.5946512417315382,
+            "p05": 0.5919370169712598,
+            "p95": 0.5975085925920741
           },
-          "gap": 0.0015358846259423409,
-          "observed_inside_interval": true
+          "gap": 0.10465124173153817,
+          "observed_inside_interval": false
         },
         {
           "subgroup_type": "income_band",
           "subgroup": "100k_plus",
-          "evidence_id": "ev_mc2110_inc_100p",
-          "observed": 0.52,
-          "observed_n": 392,
-          "observed_se": 0.02523360247522242,
+          "evidence_id": "ev_mc2112_inc_100k_plus",
+          "observed": 0.44,
+          "observed_n": 405,
+          "observed_se": 0.02466566564535397,
           "predicted": {
-            "median": 0.55975494685539,
-            "p05": 0.5500802269255683,
-            "p95": 0.5685489476770299
+            "median": 0.6338505122984601,
+            "p05": 0.6300671402166771,
+            "p95": 0.6372894725409385
           },
-          "gap": 0.03975494685538994,
+          "gap": 0.19385051229846012,
           "observed_inside_interval": false
         },
         {
           "subgroup_type": "census_region",
           "subgroup": "Northeast",
-          "evidence_id": "ev_mc2110_reg_ne",
-          "observed": 0.53,
+          "evidence_id": "ev_mc2112_cen_northeast",
+          "observed": 0.57,
           "observed_n": 353,
-          "observed_se": 0.026564369414303877,
+          "observed_se": 0.026350223483310283,
           "predicted": {
-            "median": 0.5406341752414099,
-            "p05": 0.5275548193980347,
-            "p95": 0.5538107533141187
+            "median": 0.61624137597098,
+            "p05": 0.60985477861351,
+            "p95": 0.6238077155553223
           },
-          "gap": 0.01063417524140986,
-          "observed_inside_interval": true
+          "gap": 0.0462413759709801,
+          "observed_inside_interval": false
         },
         {
           "subgroup_type": "census_region",
           "subgroup": "Midwest",
-          "evidence_id": "ev_mc2110_reg_mw",
-          "observed": 0.49,
+          "evidence_id": "ev_mc2112_cen_midwest",
+          "observed": 0.42,
           "observed_n": 444,
-          "observed_se": 0.023724203629159776,
+          "observed_se": 0.02342325017260945,
           "predicted": {
-            "median": 0.5388540283325967,
-            "p05": 0.5259730449470866,
-            "p95": 0.5513085850398466
+            "median": 0.6141308482222758,
+            "p05": 0.6075652031885924,
+            "p95": 0.6210395284182556
           },
-          "gap": 0.048854028332596666,
+          "gap": 0.19413084822227583,
           "observed_inside_interval": false
         },
         {
           "subgroup_type": "census_region",
           "subgroup": "South",
-          "evidence_id": "ev_mc2110_reg_s",
-          "observed": 0.48,
+          "evidence_id": "ev_mc2112_cen_south",
+          "observed": 0.46,
           "observed_n": 746,
-          "observed_se": 0.018291649745229236,
+          "observed_se": 0.018247626456985383,
           "predicted": {
-            "median": 0.5392332603455262,
-            "p05": 0.5275755631023055,
-            "p95": 0.550250107472758
+            "median": 0.6141861485058873,
+            "p05": 0.6086226482217245,
+            "p95": 0.6209103943129153
           },
-          "gap": 0.05923326034552623,
+          "gap": 0.15418614850588724,
           "observed_inside_interval": false
         },
         {
           "subgroup_type": "census_region",
           "subgroup": "West",
-          "evidence_id": "ev_mc2110_reg_w",
-          "observed": 0.52,
+          "evidence_id": "ev_mc2112_cen_west",
+          "observed": 0.55,
           "observed_n": 455,
-          "observed_se": 0.023421601750764794,
+          "observed_se": 0.023322865260427244,
           "predicted": {
-            "median": 0.5409004848347498,
-            "p05": 0.5296419577104248,
-            "p95": 0.5532886723531611
+            "median": 0.6166101627335527,
+            "p05": 0.6103617411903506,
+            "p95": 0.6235611673662604
           },
-          "gap": 0.020900484834749822,
+          "gap": 0.06661016273355269,
           "observed_inside_interval": false
         }
       ],
-      "mean_absolute_gap": 0.033634026091538996,
-      "interval_coverage": "2/8",
-      "hits": 2,
+      "mean_absolute_gap": 0.1230000750771912,
+      "interval_coverage": "0/8",
+      "hits": 0,
       "scored": 8,
       "method": "ladder",
+      "holdout_group": "dec2021",
+      "holdout": "Morning Consult/POLITICO #2112154, 18-20 Dec 2021",
+      "clean_out_of_sample": true,
       "warnings": [
         "Evidence ev_yg2107_inc_100p excluded: sample_size=287 is below the minimum of 300 needed for a stable predictor weight.",
         "Evidence ev_yg2107_reg_ne excluded: sample_size=252 is below the minimum of 300 needed for a stable predictor weight.",
         "Evidence ev_dfp_parents excluded: sample_size=None is below the minimum of 300 needed for a stable predictor weight.",
         "Evidence ev_dfp_nonparents excluded: sample_size=None is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_yg2102_inc_100k_plus excluded: sample_size=236 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_yg2102_cen_northeast excluded: sample_size=244 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_yg2102_cen_midwest excluded: sample_size=247 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_yg2103_inc_100k_plus excluded: sample_size=230 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_yg2103_cen_northeast excluded: sample_size=242 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_yg2103_cen_midwest excluded: sample_size=278 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_ubi1709_inc_100k_plus excluded: sample_size=230 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_mon2102_hou_has_children excluded: sample_size=180 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_mon2102_inc_under_50k excluded: sample_size=297 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_mon2102_inc_50k_to_100k excluded: sample_size=244 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_mon2102_inc_100k_plus excluded: sample_size=213 is below the minimum of 300 needed for a stable predictor weight.",
         "8 evidence record(s) held out for backtesting and excluded from poststratification.",
-        "Every covered cell resolved at the 'income_band' level, so evidence at these levels did not contribute: census_region, national. Differences along those dimensions in the output reflect the composition of the population, not measured differences in opinion.",
+        "Every covered cell resolved at the 'income_band' level, so evidence at these levels did not contribute: census_region, household_type, national. Differences along those dimensions in the output reflect the composition of the population, not measured differences in opinion.",
         "Evidence covers 100.0% of households by weight (168 of 168 population cells)."
       ]
     },
@@ -349,139 +368,146 @@
         {
           "subgroup_type": "national",
           "subgroup": "national",
-          "evidence_id": "ev_mc2110_nat",
-          "observed": 0.5,
+          "evidence_id": "ev_mc2112_nat_national",
+          "observed": 0.49,
           "observed_n": 1998,
-          "observed_se": 0.011185934253567072,
+          "observed_se": 0.01118369684295292,
           "predicted": {
-            "median": 0.525238868237687,
-            "p05": 0.5108290694358576,
-            "p95": 0.5445262942506505
+            "median": 0.4602986545544905,
+            "p05": 0.40101827252638816,
+            "p95": 0.5001303465894623
           },
-          "gap": 0.02523886823768695,
-          "observed_inside_interval": false
+          "gap": -0.02970134544550951,
+          "observed_inside_interval": true
         },
         {
           "subgroup_type": "income_band",
           "subgroup": "under_50k",
-          "evidence_id": "ev_mc2110_inc_lt50",
-          "observed": 0.5,
-          "observed_n": 882,
-          "observed_se": 0.016835875742536845,
+          "evidence_id": "ev_mc2112_inc_under_50k",
+          "observed": 0.51,
+          "observed_n": 868,
+          "observed_se": 0.016967711271896738,
           "predicted": {
-            "median": 0.5279747379148929,
-            "p05": 0.508280797266292,
-            "p95": 0.5546074162345991
+            "median": 0.4596854547611814,
+            "p05": 0.39856470168995,
+            "p95": 0.4977023026129226
           },
-          "gap": 0.02797473791489291,
+          "gap": -0.05031454523881862,
           "observed_inside_interval": false
         },
         {
           "subgroup_type": "income_band",
           "subgroup": "50k_to_100k",
-          "evidence_id": "ev_mc2110_inc_50_100",
-          "observed": 0.5,
-          "observed_n": 723,
-          "observed_se": 0.018595200082640043,
+          "evidence_id": "ev_mc2112_inc_50k_to_100k",
+          "observed": 0.49,
+          "observed_n": 725,
+          "observed_se": 0.018565819539476672,
           "predicted": {
-            "median": 0.5143715121918091,
-            "p05": 0.4841211050310581,
-            "p95": 0.5325538187110667
+            "median": 0.4590124236501806,
+            "p05": 0.39955713170940665,
+            "p95": 0.4983175728500253
           },
-          "gap": 0.0143715121918091,
+          "gap": -0.030987576349819412,
           "observed_inside_interval": true
         },
         {
           "subgroup_type": "income_band",
           "subgroup": "100k_plus",
-          "evidence_id": "ev_mc2110_inc_100p",
-          "observed": 0.52,
-          "observed_n": 392,
-          "observed_se": 0.02523360247522242,
+          "evidence_id": "ev_mc2112_inc_100k_plus",
+          "observed": 0.44,
+          "observed_n": 405,
+          "observed_se": 0.02466566564535397,
           "predicted": {
-            "median": 0.5300210644508574,
-            "p05": 0.5125391867930033,
-            "p95": 0.5613293285441892
+            "median": 0.4615955133692392,
+            "p05": 0.4029628449500011,
+            "p95": 0.502541560708923
           },
-          "gap": 0.010021064450857375,
+          "gap": 0.021595513369239205,
           "observed_inside_interval": true
         },
         {
           "subgroup_type": "census_region",
           "subgroup": "Northeast",
-          "evidence_id": "ev_mc2110_reg_ne",
-          "observed": 0.53,
+          "evidence_id": "ev_mc2112_cen_northeast",
+          "observed": 0.57,
           "observed_n": 353,
-          "observed_se": 0.026564369414303877,
+          "observed_se": 0.026350223483310283,
           "predicted": {
-            "median": 0.535571569536083,
-            "p05": 0.5107317466368202,
-            "p95": 0.5642559592616109
+            "median": 0.4705646129612888,
+            "p05": 0.40776379374012073,
+            "p95": 0.5122232374546412
           },
-          "gap": 0.005571569536082954,
-          "observed_inside_interval": true
+          "gap": -0.09943538703871113,
+          "observed_inside_interval": false
         },
         {
           "subgroup_type": "census_region",
           "subgroup": "Midwest",
-          "evidence_id": "ev_mc2110_reg_mw",
-          "observed": 0.49,
+          "evidence_id": "ev_mc2112_cen_midwest",
+          "observed": 0.42,
           "observed_n": 444,
-          "observed_se": 0.023724203629159776,
+          "observed_se": 0.02342325017260945,
           "predicted": {
-            "median": 0.497070316304775,
-            "p05": 0.46193142952131816,
-            "p95": 0.5343554016953289
+            "median": 0.44843491291007176,
+            "p05": 0.38776577847774507,
+            "p95": 0.49031699175519755
           },
-          "gap": 0.007070316304775004,
+          "gap": 0.028434912910071775,
           "observed_inside_interval": true
         },
         {
           "subgroup_type": "census_region",
           "subgroup": "South",
-          "evidence_id": "ev_mc2110_reg_s",
-          "observed": 0.48,
+          "evidence_id": "ev_mc2112_cen_south",
+          "observed": 0.46,
           "observed_n": 746,
-          "observed_se": 0.018291649745229236,
+          "observed_se": 0.018247626456985383,
           "predicted": {
-            "median": 0.5228744315944983,
-            "p05": 0.49934738378191007,
-            "p95": 0.5438111675676924
+            "median": 0.45526604016860406,
+            "p05": 0.3945418717754238,
+            "p95": 0.4962361146337922
           },
-          "gap": 0.04287443159449833,
-          "observed_inside_interval": false
+          "gap": -0.004733959831395962,
+          "observed_inside_interval": true
         },
         {
           "subgroup_type": "census_region",
           "subgroup": "West",
-          "evidence_id": "ev_mc2110_reg_w",
-          "observed": 0.52,
+          "evidence_id": "ev_mc2112_cen_west",
+          "observed": 0.55,
           "observed_n": 455,
-          "observed_se": 0.023421601750764794,
+          "observed_se": 0.023322865260427244,
           "predicted": {
-            "median": 0.5514948496547858,
-            "p05": 0.5253302373507702,
-            "p95": 0.5794950684667269
+            "median": 0.47205747872071,
+            "p05": 0.4133349761159956,
+            "p95": 0.5152005748629487
           },
-          "gap": 0.03149484965478577,
+          "gap": -0.07794252127929002,
           "observed_inside_interval": false
         }
       ],
-      "mean_absolute_gap": 0.02057716873567355,
-      "interval_coverage": "4/8",
-      "hits": 4,
+      "mean_absolute_gap": 0.042893220182856955,
+      "interval_coverage": "5/8",
+      "hits": 5,
       "scored": 8,
       "method": "mrp",
+      "holdout_group": "dec2021",
+      "holdout": "Morning Consult/POLITICO #2112154, 18-20 Dec 2021",
+      "clean_out_of_sample": true,
       "warnings": [
         "ev_dfp_parents: no sample_size published, so no observation variance can be computed. Dropped (NOT imputed).",
         "ev_dfp_nonparents: no sample_size published, so no observation variance can be computed. Dropped (NOT imputed).",
-        "MRP fitted on 16 crosstab observations across 2 dimension(s): census_region, income_band. Partial pooling, so no MIN_EVIDENCE_N exclusion is applied -- 2 thin record(s) are USED at reduced weight: ev_yg2107_inc_100p, ev_yg2107_reg_ne.",
-        "Estimated survey house effects (logit scale, median): morning_consult +0.049; yougov_economist -0.049. Spread 0.098 logits ~ 2.5 points at the midpoint -- instrument effect, removed from the population estimate.",
-        "Between-level SD for census_region: 0.102 logits (median posterior).",
-        "Between-level SD for income_band: 0.038 logits (median posterior).",
-        "No usable evidence on: household_type. These dimensions are EXCLUDED from the model rather than imputed, and groups defined on them report insufficient_evidence."
+        "21 record(s) about a different policy were excluded by policy_key. Pooling them into a 'ctc_2021' estimate would mix answers to different questions about different policies.",
+        "MRP fitted on 64 crosstab observations for policy 'ctc_2021', across 2 dimension(s) (census_region, income_band), 2 survey house(s), 5 question wording(s) and 8 fielding date(s) (2021-02-20 to 2021-10-04). No MIN_EVIDENCE_N exclusion is applied; 8 thin record(s) are USED at reduced weight.",
+        "Support is reported as of 2021-12-19, using the 'mc_monthly_payment_support' question wording.",
+        "Fitted time trend: -0.0510 logits/month [-0.0622, -0.0400]. Identified from repeated-wording waves; treat as an extrapolation outside the observed window.",
+        "Survey house effects (logit scale, median): morning_consult +0.037; yougov_economist -0.037. Spread 0.075 logits -- instrument effect, removed from the population estimate.",
+        "Between-wording SD: 0.287 logits. Between-level SD for census_region: 0.053; Between-level SD for income_band: 0.005",
+        "No usable evidence on: household_type. Excluded from the model rather than imputed; groups defined on them report insufficient_evidence."
       ]
     },
+    "holdout": "Morning Consult/POLITICO #2112154, 18-20 Dec 2021",
+    "clean_out_of_sample": true,
     "mrp_closer_on": "6/8"
   },
   "parameter_set_comparison": {
@@ -617,5 +643,304 @@
     },
     "moved_closer": true,
     "movement_pts": 0.014293464877081219
+  },
+  "method_comparison_oct2021_not_clean": {
+    "ladder": {
+      "rows": [
+        {
+          "subgroup_type": "national",
+          "subgroup": "national",
+          "evidence_id": "ev_mc2110_nat",
+          "observed": 0.5,
+          "observed_n": 1998,
+          "observed_se": 0.011185934253567072,
+          "predicted": {
+            "median": 0.6152429923857657,
+            "p05": 0.6121380312226254,
+            "p95": 0.6185103898847254
+          },
+          "gap": 0.11524299238576574,
+          "observed_inside_interval": false
+        },
+        {
+          "subgroup_type": "income_band",
+          "subgroup": "under_50k",
+          "evidence_id": "ev_mc2110_inc_lt50",
+          "observed": 0.5,
+          "observed_n": 882,
+          "observed_se": 0.016835875742536845,
+          "predicted": {
+            "median": 0.6090873187690696,
+            "p05": 0.6066714163659215,
+            "p95": 0.6114574650309325
+          },
+          "gap": 0.10908731876906963,
+          "observed_inside_interval": false
+        },
+        {
+          "subgroup_type": "income_band",
+          "subgroup": "50k_to_100k",
+          "evidence_id": "ev_mc2110_inc_50_100",
+          "observed": 0.5,
+          "observed_n": 723,
+          "observed_se": 0.018595200082640043,
+          "predicted": {
+            "median": 0.5946512417315382,
+            "p05": 0.5919370169712598,
+            "p95": 0.5975085925920741
+          },
+          "gap": 0.09465124173153816,
+          "observed_inside_interval": false
+        },
+        {
+          "subgroup_type": "income_band",
+          "subgroup": "100k_plus",
+          "evidence_id": "ev_mc2110_inc_100p",
+          "observed": 0.52,
+          "observed_n": 392,
+          "observed_se": 0.02523360247522242,
+          "predicted": {
+            "median": 0.6338505122984601,
+            "p05": 0.6300671402166771,
+            "p95": 0.6372894725409385
+          },
+          "gap": 0.1138505122984601,
+          "observed_inside_interval": false
+        },
+        {
+          "subgroup_type": "census_region",
+          "subgroup": "Northeast",
+          "evidence_id": "ev_mc2110_reg_ne",
+          "observed": 0.53,
+          "observed_n": 353,
+          "observed_se": 0.026564369414303877,
+          "predicted": {
+            "median": 0.61624137597098,
+            "p05": 0.60985477861351,
+            "p95": 0.6238077155553223
+          },
+          "gap": 0.08624137597098003,
+          "observed_inside_interval": false
+        },
+        {
+          "subgroup_type": "census_region",
+          "subgroup": "Midwest",
+          "evidence_id": "ev_mc2110_reg_mw",
+          "observed": 0.49,
+          "observed_n": 444,
+          "observed_se": 0.023724203629159776,
+          "predicted": {
+            "median": 0.6141308482222758,
+            "p05": 0.6075652031885924,
+            "p95": 0.6210395284182556
+          },
+          "gap": 0.12413084822227582,
+          "observed_inside_interval": false
+        },
+        {
+          "subgroup_type": "census_region",
+          "subgroup": "South",
+          "evidence_id": "ev_mc2110_reg_s",
+          "observed": 0.48,
+          "observed_n": 746,
+          "observed_se": 0.018291649745229236,
+          "predicted": {
+            "median": 0.6141861485058873,
+            "p05": 0.6086226482217245,
+            "p95": 0.6209103943129153
+          },
+          "gap": 0.13418614850588728,
+          "observed_inside_interval": false
+        },
+        {
+          "subgroup_type": "census_region",
+          "subgroup": "West",
+          "evidence_id": "ev_mc2110_reg_w",
+          "observed": 0.52,
+          "observed_n": 455,
+          "observed_se": 0.023421601750764794,
+          "predicted": {
+            "median": 0.6166101627335527,
+            "p05": 0.6103617411903506,
+            "p95": 0.6235611673662604
+          },
+          "gap": 0.09661016273355272,
+          "observed_inside_interval": false
+        }
+      ],
+      "mean_absolute_gap": 0.10925007507719119,
+      "interval_coverage": "0/8",
+      "hits": 0,
+      "scored": 8,
+      "method": "ladder",
+      "holdout_group": "oct2021",
+      "holdout": "Morning Consult/POLITICO #2110009, Oct 2021",
+      "clean_out_of_sample": false,
+      "warnings": [
+        "Evidence ev_yg2107_inc_100p excluded: sample_size=287 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_yg2107_reg_ne excluded: sample_size=252 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_dfp_parents excluded: sample_size=None is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_dfp_nonparents excluded: sample_size=None is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_yg2102_inc_100k_plus excluded: sample_size=236 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_yg2102_cen_northeast excluded: sample_size=244 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_yg2102_cen_midwest excluded: sample_size=247 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_yg2103_inc_100k_plus excluded: sample_size=230 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_yg2103_cen_northeast excluded: sample_size=242 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_yg2103_cen_midwest excluded: sample_size=278 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_ubi1709_inc_100k_plus excluded: sample_size=230 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_mon2102_hou_has_children excluded: sample_size=180 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_mon2102_inc_under_50k excluded: sample_size=297 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_mon2102_inc_50k_to_100k excluded: sample_size=244 is below the minimum of 300 needed for a stable predictor weight.",
+        "Evidence ev_mon2102_inc_100k_plus excluded: sample_size=213 is below the minimum of 300 needed for a stable predictor weight.",
+        "8 evidence record(s) held out for backtesting and excluded from poststratification.",
+        "Every covered cell resolved at the 'income_band' level, so evidence at these levels did not contribute: census_region, household_type, national. Differences along those dimensions in the output reflect the composition of the population, not measured differences in opinion.",
+        "Evidence covers 100.0% of households by weight (168 of 168 population cells)."
+      ]
+    },
+    "mrp": {
+      "rows": [
+        {
+          "subgroup_type": "national",
+          "subgroup": "national",
+          "evidence_id": "ev_mc2110_nat",
+          "observed": 0.5,
+          "observed_n": 1998,
+          "observed_se": 0.011185934253567072,
+          "predicted": {
+            "median": 0.49374764283659256,
+            "p05": 0.4304292494728093,
+            "p95": 0.5336314994153105
+          },
+          "gap": -0.00625235716340744,
+          "observed_inside_interval": true
+        },
+        {
+          "subgroup_type": "income_band",
+          "subgroup": "under_50k",
+          "evidence_id": "ev_mc2110_inc_lt50",
+          "observed": 0.5,
+          "observed_n": 882,
+          "observed_se": 0.016835875742536845,
+          "predicted": {
+            "median": 0.49329826362772455,
+            "p05": 0.42798627666422595,
+            "p95": 0.5341789422142169
+          },
+          "gap": -0.006701736372275446,
+          "observed_inside_interval": true
+        },
+        {
+          "subgroup_type": "income_band",
+          "subgroup": "50k_to_100k",
+          "evidence_id": "ev_mc2110_inc_50_100",
+          "observed": 0.5,
+          "observed_n": 723,
+          "observed_se": 0.018595200082640043,
+          "predicted": {
+            "median": 0.49312954089548267,
+            "p05": 0.42904151904140436,
+            "p95": 0.5327082034701027
+          },
+          "gap": -0.006870459104517335,
+          "observed_inside_interval": true
+        },
+        {
+          "subgroup_type": "income_band",
+          "subgroup": "100k_plus",
+          "evidence_id": "ev_mc2110_inc_100p",
+          "observed": 0.52,
+          "observed_n": 392,
+          "observed_se": 0.02523360247522242,
+          "predicted": {
+            "median": 0.49487615155897746,
+            "p05": 0.43167262609736645,
+            "p95": 0.5344767851741431
+          },
+          "gap": -0.025123848441022556,
+          "observed_inside_interval": true
+        },
+        {
+          "subgroup_type": "census_region",
+          "subgroup": "Northeast",
+          "evidence_id": "ev_mc2110_reg_ne",
+          "observed": 0.53,
+          "observed_n": 353,
+          "observed_se": 0.026564369414303877,
+          "predicted": {
+            "median": 0.5011988244384757,
+            "p05": 0.4371739618318852,
+            "p95": 0.541868925910129
+          },
+          "gap": -0.028801175561524284,
+          "observed_inside_interval": true
+        },
+        {
+          "subgroup_type": "census_region",
+          "subgroup": "Midwest",
+          "evidence_id": "ev_mc2110_reg_mw",
+          "observed": 0.49,
+          "observed_n": 444,
+          "observed_se": 0.023724203629159776,
+          "predicted": {
+            "median": 0.4825429880321339,
+            "p05": 0.41571405509381215,
+            "p95": 0.5256908664814137
+          },
+          "gap": -0.0074570119678660785,
+          "observed_inside_interval": true
+        },
+        {
+          "subgroup_type": "census_region",
+          "subgroup": "South",
+          "evidence_id": "ev_mc2110_reg_s",
+          "observed": 0.48,
+          "observed_n": 746,
+          "observed_se": 0.018291649745229236,
+          "predicted": {
+            "median": 0.4898164101017567,
+            "p05": 0.42562988891436615,
+            "p95": 0.5328043849832522
+          },
+          "gap": 0.009816410101756712,
+          "observed_inside_interval": true
+        },
+        {
+          "subgroup_type": "census_region",
+          "subgroup": "West",
+          "evidence_id": "ev_mc2110_reg_w",
+          "observed": 0.52,
+          "observed_n": 455,
+          "observed_se": 0.023421601750764794,
+          "predicted": {
+            "median": 0.5032753870696431,
+            "p05": 0.44112344307969525,
+            "p95": 0.5469285101984364
+          },
+          "gap": -0.016724612930356875,
+          "observed_inside_interval": true
+        }
+      ],
+      "mean_absolute_gap": 0.01346845145534084,
+      "interval_coverage": "8/8",
+      "hits": 8,
+      "scored": 8,
+      "method": "mrp",
+      "holdout_group": "oct2021",
+      "holdout": "Morning Consult/POLITICO #2110009, Oct 2021",
+      "clean_out_of_sample": false,
+      "warnings": [
+        "10 record(s) fielded on or after 2021-10-04 were excluded from training. A model predicting that date must not see data from it or later.",
+        "21 record(s) about a different policy were excluded by policy_key. Pooling them into a 'ctc_2021' estimate would mix answers to different questions about different policies.",
+        "MRP fitted on 56 crosstab observations for policy 'ctc_2021', across 2 dimension(s) (census_region, income_band), 2 survey house(s), 5 question wording(s) and 7 fielding date(s) (2021-02-20 to 2021-09-19). No MIN_EVIDENCE_N exclusion is applied; 8 thin record(s) are USED at reduced weight.",
+        "Support is reported as of 2021-10-04, using the 'mc_monthly_payment_support' question wording.",
+        "Fitted time trend: -0.0511 logits/month [-0.0643, -0.0378]. Identified from repeated-wording waves; treat as an extrapolation outside the observed window.",
+        "Survey house effects (logit scale, median): morning_consult +0.031; yougov_economist -0.031. Spread 0.062 logits -- instrument effect, removed from the population estimate.",
+        "Between-wording SD: 0.287 logits. Between-level SD for census_region: 0.044; Between-level SD for income_band: 0.005",
+        "No usable evidence on: household_type. Excluded from the model rather than imputed; groups defined on them report insufficient_evidence."
+      ]
+    },
+    "holdout": "Morning Consult/POLITICO #2110009, Oct 2021",
+    "clean_out_of_sample": false,
+    "mrp_closer_on": "8/8"
   }
 }

@@ -424,8 +424,11 @@ def attach(result, df, n_draws=None, seed=20260905, method=None):
     method = method or METHOD
     if method == "mrp":
         import mrp as M
+        # Production uses EVERY verified record. holdout_group=None disables
+        # the backtest split; withholding December from the demo would report a
+        # number we can do better than.
         overall, overall_ids, by_group, warns = M.poststratify(
-            df, n_draws=n_draws, seed=seed)
+            df, n_draws=n_draws, seed=seed, holdout_group=None)
     else:
         overall, overall_ids, by_group, warns = poststratify(
             df, n_draws=n_draws, seed=seed)

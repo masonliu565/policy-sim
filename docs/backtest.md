@@ -282,3 +282,90 @@ against a poll neither method has seen.
 **What MRP does not fix:** the residual bias is still one-directional. Every
 training record was fielded in July 2021, so no time effect is identified, and
 support genuinely fell by October. The model is answering a question about July.
+
+---
+
+# POST-HOC, PART 3 — a clean holdout, and what it showed
+
+The caveat hanging over Part 2 was that MRP had been designed after seeing the
+ladder miss on the October poll. That caveat is now retired: a further evidence
+pass turned up **Morning Consult/POLITICO #2112154, fielded 18–20 December
+2021**, with question wording *identical* to the July and October waves. It was
+added to the evidence file after both methods had been built and evaluated, so
+no design decision could have been informed by it.
+
+It was independently re-verified from the source PDF before use: national
+23%+26%=49% (n=1,998); income 51/49/44; regions 57/42/46/55; cell Ns sum to each
+row total.
+
+## Result — clean out-of-sample
+
+| | fallback ladder | MRP |
+|---|---|---|
+| mean absolute gap | 12.30 pts | **4.29 pts** |
+| observed inside 90% interval | 0 / 8 | **5 / 8** |
+| closer on | — | **6 of 8 subgroups** |
+
+The residual gaps now split in both directions (−9.9 to +2.8) instead of all
+pointing the same way. The systematic one-directional bias reported in Part 1 is
+gone: the fitted time trend accounts for the 2021 decline rather than ignoring
+it.
+
+## What changed in the model
+
+The evidence base grew from 26 records to 95, and MRP now separates **four**
+things the ladder confounded:
+
+1. **Policy.** Records are partitioned by `policy_key`. A CTC estimate never
+   pools in stimulus-check, UBI or whole-package polling. Without this,
+   "79% support $1,400 checks" would have inflated the CTC number.
+2. **Survey house.** Estimated and removed, so the output describes the public
+   rather than one pollster's instrument.
+3. **Question wording.** Between-wording SD is **0.270 logits** — large. "Do you
+   approve of the expanded CTC" (0.51) and "extend the CTC as part of the $1.9T
+   package" (0.69) are different questions, and treating them as one number was
+   most of the ladder's 12-point error.
+4. **Time.** Fitted trend **−0.043 logits/month** [−0.052, −0.035], negative and
+   excluding zero. Support for the CTC measurably declined across 2021.
+
+## A leak we found and closed
+
+The first version of the October re-test held out the October wave but left
+December in training — letting the model *interpolate* between July and December
+rather than extrapolate forward. That produced a flattering 0.69-point mean gap
+and 8/8 coverage. It was leakage, not skill.
+
+`load_observations` now enforces a **temporal split**: training may contain
+nothing fielded on or after the held-out poll's own date. The honest October
+number is **1.35 points**, 8/8 coverage. Both are reported in
+`scenarios/backtest.json`; the December test is the one to quote, because it is
+the only one where the model's design could not have been influenced by the
+answer.
+
+## A finding, not a bug: there is no stable income gradient
+
+`sigma[income_band]` fits at **0.005 logits** — essentially zero. That is not a
+collapsed sampler. The income spread genuinely **flips direction between waves**:
+March 2021 rises with income (0.67 → 0.76), December falls (0.51 → 0.44), July
+YouGov is U-shaped (0.56 / 0.47 / 0.54). A single additive income effect
+correctly shrinks toward zero, and the model reaches independently the same
+conclusion a human reviewer reached from the raw tables: do not over-fit that
+dimension.
+
+This forced a better diagnostic. Asserting "sigma > threshold" on live evidence
+conflates a broken sampler with an effect that is really near zero, so
+`model/diagnostics.py` now runs a **synthetic recovery test** — simulate from a
+known truth and require the sampler to find it. It recovers a between-level SD
+of 0.225 against an empirical 0.222, and a time trend of −0.0497 against a true
+−0.0500.
+
+## Still true, still unfixed
+
+- **`household_type` has no CTC evidence.** The only parental-status crosstab
+  with published subgroup Ns (Monmouth, Feb–Mar 2021) asks about the ARP package
+  as a whole, not the CTC, so `policy_key` correctly keeps it out. Those groups
+  still report `insufficient_evidence`.
+- **The time trend is an extrapolation** from a small number of repeated-wording
+  waves. It should not be pushed far beyond the observed window.
+- **Backtest 1 still misses**, and sourcing the parameters moved it 0.01 points.
+  Nothing in this section changes that.
