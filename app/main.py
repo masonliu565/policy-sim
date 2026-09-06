@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app import charts
 from app.parser import ParseError, ParseResult, parse_policy
 from app.report import ReportError, ReportResult, generate_report
+from app import map_view
 from app.scenarios import ScenarioError, list_scenarios, load_scenario
 from app.theme import FONT_MONO, palette
 
@@ -123,8 +124,91 @@ def sidebar() -> dict:
 
     st.sidebar.caption(f"{len(entries)} scenario file(s) on disk")
     st.sidebar.divider()
-    mode = "night" if st.sidebar.toggle("Night palette", value=False, key="night") else "day"
+    stored = st.session_state.get("map_mode", "day")
+    mode = "night" if st.sidebar.toggle(
+        "Night palette", value=(stored == "night"), key="night") else "day"
+    if mode != stored:
+        st.session_state["map_mode"] = mode
     return {"entry": chosen, "mode": mode}
+
+
+# ---------------------------------------------------------------------------
+# Main view — the isometric map
+# ---------------------------------------------------------------------------
+def section_map(scenario: dict, mode: str) -> str:
+    """Draw the map and act on whatever the user did inside it.
+
+    The component owns the zoom and the panel swap so they stay smooth; Python
+    only hears about the result afterwards. Events carry a nonce because the
+    component's return value persists across reruns, and acting on it twice
+    would re-parse a policy the user submitted once.
+    """
+    event = map_view.render(
+        scenario,
+        mode=mode,
+        stack=st.session_state.get("policy_stack", []),
+        policy_note=st.session_state.get("map_note", ""),
+        rebuild=st.session_state.get("map_rebuild", False),
+        key="isomap",
+    )
+    st.session_state["map_rebuild"] = False
+
+    if not event:
+        return mode
+
+    st.session_state["selected_metro"] = event.get("metro")
+
+    if event.get("mode") in ("day", "night") and event["mode"] != mode:
+        st.session_state["map_mode"] = event["mode"]
+        st.rerun()
+
+    nonce = event.get("nonce")
+    if nonce and nonce != st.session_state.get("map_nonce"):
+        st.session_state["map_nonce"] = nonce
+
+        if event.get("reset"):
+            _reset_to_baseline()
+
+        text = event.get("policy_text")
+        if text:
+            if demo_mode():
+                st.session_state["map_note"] = "Parsing is off in demo mode."
+            else:
+                with st.spinner("Reading the policy…"):
+                    outcome = parse_policy(text)
+                st.session_state["parse_outcome"] = outcome
+                st.session_state["policy_text_from_map"] = text
+                st.session_state["map_note"] = (
+                    outcome.message if isinstance(outcome, ParseError)
+                    else "Read — see the panel below."
+                )
+            st.rerun()
+
+    return mode
+
+
+def _reset_to_baseline() -> None:
+    """Clear the stack and return to the baseline scenario if one exists.
+
+    If no baseline scenario file has been precomputed, this says so rather than
+    inventing a zero-policy result.
+    """
+    st.session_state["policy_stack"] = []
+    st.session_state["parse_outcome"] = None
+    st.session_state["report_outcome"] = None
+    st.session_state["selected_metro"] = None
+
+    entries = list_scenarios()
+    baseline = next((i for i, e in enumerate(entries)
+                     if e["policy_id"] == "baseline" or e["filename"] == "baseline.json"), None)
+    if baseline is None:
+        st.session_state["map_note"] = (
+            "Reset. No baseline scenario file exists yet (Track A's A7 step), "
+            "so the view stays on the current scenario."
+        )
+    else:
+        st.session_state["scenario_idx"] = baseline
+        st.session_state["map_note"] = "Reset to baseline."
 
 
 # ---------------------------------------------------------------------------
@@ -543,11 +627,15 @@ def main() -> None:
         f"read from `{Path(state['entry']['path']).name}` — no live model call"
     )
 
+    mode = st.session_state.get("map_mode", state["mode"])
+    section_map(scenario, mode)
+
+    st.divider()
     section_policy_input()
     st.divider()
-    section_impact(scenario, state["mode"])
+    section_impact(scenario, mode)
     st.divider()
-    section_opinion(scenario, state["mode"])
+    section_opinion(scenario, mode)
     st.divider()
     section_limitations(scenario)
     st.divider()
