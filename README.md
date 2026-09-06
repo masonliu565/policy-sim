@@ -164,11 +164,17 @@ transfer reaches none of them.
 written for a health survey: its column header is the literal string `Cost
 barriers` and its sample line reads *"valid yes/no responses"*. Rendering
 subgroup impacts through it unchanged would print a table whose header lies
-about the numbers beneath it. `dc_api/patch_frontend.py` makes exactly three
-strings data-driven — the column labels, the sample line, the disclosure
-summary — each falling back to the atlas's own wording, so every existing
-health answer still renders identically and the atlas's own 42 tests still
-pass. It is idempotent and fails loudly if upstream moves those lines. Nothing
+about the numbers beneath it. `dc_api/patch_frontend.py` makes five strings
+data-driven — the column labels, the sample line, the disclosure summary, and
+the headline and interval formatting — each falling back to the atlas's own
+wording, so every existing health answer still renders identically and the
+atlas's own 42 tests still pass.
+
+The last two were not cosmetic. The atlas's number formatter rounds anything
+whose unit is not `percent` to a whole number, so a −1.33 percentage-point
+change displayed as **−1**, and a −7.25 to +4.56 point interval displayed as
+**−7 to 5**. The headline of a policy answer is the one number nobody should
+have to squint at. It is idempotent and fails loudly if upstream moves those lines. Nothing
 else in the atlas is touched.
 
 **One example question is refused.** BRFSS MEDCOST1 — could an adult not see a

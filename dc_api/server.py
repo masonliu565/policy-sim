@@ -552,9 +552,17 @@ def answer_policy_simulation(spec, question):
             f"costs ${sim['impact']['annual_cost_usd']['median'] / 1e6:,.0f}M a "
             f"year in DC."),
         estimate={"kind": "percentage_point_change",
-                  "value": round(100 * (med - base), 2), "unit": "points"},
+                  "value": round(100 * (med - base), 2), "unit": "points",
+                  # Spelled out, because the front end's default formatter
+                  # rounds a non-percent unit to a whole number and -1.33
+                  # points would show as "-1". One decimal, not two: the
+                  # interval is several points wide.
+                  "displayValue": f"{100 * (med - base):+.1f} points",
+                  "label": "change in the DC child poverty rate"},
         uncertainty={"level": 0.9, "lower": round(100 * (cpr["p05"] - base), 2),
                      "upper": round(100 * (cpr["p95"] - base), 2),
+                     "displayRange": f"{100 * (cpr['p05'] - base):+.1f} to "
+                                     f"{100 * (cpr['p95'] - base):+.1f} points",
                      "method": f"{sim['n_seeds']} Latin hypercube draws over "
                                f"take-up, labour supply and MPC, with a "
                                f"Bayesian bootstrap over households.",
