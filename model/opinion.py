@@ -79,6 +79,13 @@ LEVER_SCALES = {
     "flat_transfer_per_adult": 1400.0,
 }
 IN_SUPPORT_MAX_DISTANCE = 1.5
+
+# "No phaseout" has to be encoded as SOME number in lever space. A very large
+# sentinel would let this single dimension dominate every distance and mark
+# almost everything out-of-support for the wrong reason. A threshold above
+# roughly 4x the reference ($300k single / $600k joint) is operationally "no
+# phaseout" for this income distribution, so that is the value used.
+NO_PHASEOUT_NORM = 4.0
 N_NEAREST = 3
 
 
@@ -346,24 +353,58 @@ def _vec(levers):
         if v is None or (isinstance(v, float) and not np.isfinite(v)):
             # "no phaseout" is represented as a very high threshold, which is
             # genuinely far from a policy that phases out at $75k.
-            v = 10.0 * scale if "phaseout_start" in k else 0.0
+            v = NO_PHASEOUT_NORM * scale if "phaseout_start" in k else 0.0
         out.append(float(v) / scale)
     return np.array(out)
 
 
-def check_in_support(policy_spec, registry_path=REGISTRY_PATH):
+def evidence_backed_policies(evidence_path=EVIDENCE_PATH):
+    """Policy names we actually hold OPINION evidence about."""
+    if not evidence_path.exists():
+        return set()
+    recs = json.loads(evidence_path.read_text(encoding="utf-8"))
+    return {r.get("policy_name") for r in recs
+            if not str(r.get("evidence_id", "")).startswith("_")
+            and r.get("policy_name")}
+
+
+def check_in_support(policy_spec, registry_path=REGISTRY_PATH,
+                     evidence_path=EVIDENCE_PATH):
+    """
+    Is this policy close enough to something we have OPINION evidence about?
+
+    The comparison set is deliberately NOT the whole policy registry. The
+    registry holds real policies with statutory citations, but we hold survey
+    crosstabs for only some of them. Measuring distance to a policy we have no
+    opinion data about would let a proposal be declared "in support" on the
+    strength of a policy nobody was ever polled on.
+
+    That bug was live: the no-policy BASELINE scenario came out in_support=True
+    because its nearest registry neighbour was the Alaska Permanent Fund
+    Dividend, and it duly reported 54% public support for doing nothing.
+    """
     reg = json.loads(registry_path.read_text(encoding="utf-8"))["policies"]
+    backed_names = evidence_backed_policies(evidence_path)
     target = _vec(policy_spec)
+
     scored = []
     for pol in reg:
+        has_ev = pol["label"] in backed_names
         d = float(np.linalg.norm(target - _vec(pol["levers"])))
         scored.append({"policy_id": pol["policy_id"], "label": pol["label"],
                        "year": pol["year"], "source": pol["source"],
-                       "distance": round(d, 3)})
+                       "distance": round(d, 3),
+                       "has_opinion_evidence": has_ev})
     scored.sort(key=lambda r: r["distance"])
-    nearest = scored[:N_NEAREST]
-    in_support = bool(scored[0]["distance"] <= IN_SUPPORT_MAX_DISTANCE)
-    return in_support, nearest
+
+    backed = [r for r in scored if r["has_opinion_evidence"]]
+    if not backed:
+        return False, scored[:N_NEAREST]
+    in_support = bool(backed[0]["distance"] <= IN_SUPPORT_MAX_DISTANCE)
+    # Literally "the nearest historical policies we DO have data on" -- so only
+    # evidence-backed entries. Listing registry policies we were never given
+    # opinion data about would restate the bug this function exists to fix.
+    return in_support, backed[:N_NEAREST]
 
 
 # ---------------------------------------------------------------------------
@@ -407,6 +448,9 @@ def attach(result, df, n_draws=None, seed=20260905):
         if not in_support:
             entry["support"] = None
             entry["evidence_status"] = "out_of_support"
+            # No applicable evidence, so no citations. Leaving the ids in would
+            # imply those records speak to this policy; they do not.
+            entry["evidence_ids"] = []
         else:
             entry["support"] = g["support"]
             entry["evidence_status"] = g["evidence_status"]
