@@ -71,6 +71,24 @@ def interpret(question: str) -> Dict[str, Any]:
                  timeframe=m.group(2))
         return s
 
+    # "Which ward has the most X" is the shape people actually type, and it is
+    # a ranking, not a count. The server ranks the wards; this only has to route
+    # it there and leave the geography unset so nothing is assumed.
+    m = re.match(r"^(?:which|what) ward (?:has|had|reported|files?|filed|"
+                 r"reports?|complains?|complained)?\s*(?:the\s+)?(?:most|"
+                 r"highest|worst)\s*(?:number of\s+)?(.{1,120}?)"
+                 r"(?:\s+in\s+(20\d{2}))?\s*\??$", q, re.I)
+    if m:
+        s = base()
+        service = re.sub(r"\b(311\s+)?(requests?|complaints?|reports?)\b", "",
+                         m.group(1), flags=re.I).strip(" ?.,")
+        s.update(kind="service_requests", year=int(m.group(2)) if m.group(2) else None,
+                 service=service or None, geography=dict(DISTRICT),
+                 outcome="Recorded service request count, ranked by ward",
+                 population="Service requests, not unique residents",
+                 timeframe=m.group(2) or "")
+        return s
+
     m = re.match(r"^What was ([a-z0-9_]+) prevalence in DC tract (11\d{9}) in "
                  r"(20\d{2})$", q, re.I)
     if m:

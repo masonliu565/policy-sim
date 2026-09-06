@@ -5,7 +5,8 @@
 # this repository: it is ~109 MB of bundled DC map assets, and copying it in
 # would fork it. This clones it, builds it, and leaves it in frontend/, which is
 # gitignored. Not one line of it is edited -- the whole point is that our
-# evidence service satisfies its existing /api/v1 contract.
+# evidence service satisfies its existing /api/v1 contract, save for one
+# narrow patch to the breakdown table's hardcoded column labels.
 #
 #   bash dc_api/setup_frontend.sh
 #   python dc_api/build_cache.py      # fetch the DC evidence, once
@@ -30,6 +31,12 @@ else
   rm -rf "$DEST"
   git clone --depth 1 "$UPSTREAM" "$DEST"
 fi
+
+# One patch, applied here rather than vendored: the atlas's breakdown table
+# hardcodes health-survey column headers, and our policy answers put subgroup
+# impacts in that table. See dc_api/patch_frontend.py for exactly what and why.
+echo ">>> making the breakdown table label itself from the data"
+python dc_api/patch_frontend.py "$DEST" || py dc_api/patch_frontend.py "$DEST"
 
 echo ">>> installing atlas dependencies"
 pnpm --dir "$DEST/city" install

@@ -140,7 +140,9 @@ def run_dc(levers: Dict[str, Any], seeds: int = 300) -> Dict[str, Any]:
 
     pop = population()
     res = E.run(spec, "dc_policy", "DC policy", n_seeds=seeds, pop=pop)
-    res.pop("_by_group_impact", None)
+    # The per-group impacts are the point of the exercise -- who the policy
+    # reaches, not just the headline -- so they are kept, not dropped.
+    res["by_group"] = res.pop("_by_group_impact", [])
     res["n_households"] = pop.n
     res["n_seeds"] = seeds
     res["warnings"] = [

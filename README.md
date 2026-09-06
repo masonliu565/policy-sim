@@ -117,8 +117,9 @@ python model/build_us_outline.py
 There is a second way to run this. [kp224/simcity](https://github.com/kp224/simcity)
 is an illustrated 3D atlas of Washington DC with an "Ask Juniper" chat that
 expects a local evidence service on `/api/v1`. `dc_api/` implements that
-service over our evidence, so the atlas runs **entirely unchanged** — not one
-line of its source is edited, and it is cloned rather than vendored.
+service over our evidence, so the atlas runs on our numbers. It is cloned
+rather than vendored, and exactly **one** patch is applied to it, described
+below.
 
 ```bash
 bash dc_api/setup_frontend.sh     # clone + build the atlas (unchanged)
@@ -134,6 +135,41 @@ The cache makes the running service offline. What it answers, and from what:
 | DC households under an income threshold | ACS 2024 1-Year PUMS, 3,083 occupied DC household records, ADJINC-adjusted, counted exactly at the threshold |
 | Tract health prevalence | CDC PLACES, 40 measures, carrying the publisher's own confidence limits |
 | A described cash transfer | our microsimulation, run on a DC-only population built from the same PUMS |
+
+**Who a policy reaches is the answer, not a footnote.** A policy question
+returns one headline number — the change in DC child poverty — and under it a
+table of which household groups the money actually lands on, with the dollar
+change per household per year and the share of the group reached:
+
+| Group | ACS records | Share reached | 90% interval |
+|---|---|---|---|
+| One adult with children · +$2,273/yr (+$1,775 to +$2,986) | 103 | 53.9% | 43.3–63.0% |
+| Two adults with children · +$2,068/yr (+$1,689 to +$2,452) | 340 | 56.4% | 50.3–61.5% |
+| One adult, no children · +$0/yr | 1,431 | 0.0% | 0.0–0.0% |
+
+*(a $300/month per-child-under-6 transfer)*
+
+Two design decisions in that table are deliberate. The **share reached** is the
+only group quantity that is a share, so it is the only one the interval column
+can honestly hold; the dollar change rides in the row label rather than being
+pushed through a percent formatter, which would print a wrong number. And a
+group's interval carries the Bayesian bootstrap over households, because
+whether a household is paid is decided by the policy rules and not by any drawn
+parameter — without the bootstrap every draw returned the identical share and
+the interval printed as `53.9%–53.9%`, which is not a narrow interval but a
+missing one. The `0.0–0.0%` on childless households is a true zero: a per-child
+transfer reaches none of them.
+
+**The one frontend patch.** The atlas ships a single breakdown-table renderer,
+written for a health survey: its column header is the literal string `Cost
+barriers` and its sample line reads *"valid yes/no responses"*. Rendering
+subgroup impacts through it unchanged would print a table whose header lies
+about the numbers beneath it. `dc_api/patch_frontend.py` makes exactly three
+strings data-driven — the column labels, the sample line, the disclosure
+summary — each falling back to the atlas's own wording, so every existing
+health answer still renders identically and the atlas's own 42 tests still
+pass. It is idempotent and fails loudly if upstream moves those lines. Nothing
+else in the atlas is touched.
 
 **One example question is refused.** BRFSS MEDCOST1 — could an adult not see a
 doctor because of cost — is not published for DC 2024 in any public aggregate
@@ -155,7 +191,7 @@ recomputation from the cache, and the unanswerable question stays unanswered.
 ### Checks
 
 ```bash
-python -m pytest app/tests dc_api -q   # 83 tests
+python -m pytest app/tests dc_api -q   # 94 tests
 python app/tests/smoke_demo.py      # drives the running app in a browser
 python model/diagnostics.py         # 25 engine invariants + MCMC convergence
 bash model/reproduce.sh             # rebuild every artefact from raw PUMS

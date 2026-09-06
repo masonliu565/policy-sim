@@ -141,6 +141,51 @@ def result(spec: Dict[str, Any], question: str, **kw) -> Dict[str, Any]:
     return out
 
 
+
+STOPWORDS = {"complaint", "complaints", "request", "requests", "issue", "issues",
+             "problem", "problems", "service", "report", "reports", "about",
+             "related", "and", "or", "the", "for", "in", "of"}
+
+
+def match_services(service: str, pool: Dict[str, int]) -> Dict[str, int]:
+    """
+    Find the 311 service types a phrase refers to.
+
+    Naive substring matching failed twice in one question. "rodent/rat
+    complaints" matched nothing, because no single service type contains that
+    whole phrase -- the real one is "Rodent Inspection and Treatment". And
+    searching for "rat" matched "DMV - Vehicle Registration Issues", because
+    "rat" sits inside "Registration".
+
+    So: split the phrase on separators, drop filler words, and match each
+    remaining term on WORD BOUNDARIES. A term also matches a longer word it
+    starts (rodent -> rodents), which is what people mean, without matching a
+    word that merely contains it.
+    """
+    terms = [t for t in re.split(r"[\/,&]|\band\b|\bor\b", service.lower())
+             if t.strip()]
+    words = []
+    for term in terms:
+        for w in re.findall(r"[a-z]{3,}", term):
+            if w not in STOPWORDS:
+                words.append(w)
+    if not words:
+        words = [w for w in re.findall(r"[a-z]{3,}", service.lower())]
+    # People type the plural; the service catalogue uses the singular ("rats"
+    # against "Rat Replacement Containers"). Match the stem too. Anchoring on a
+    # word boundary keeps "rat" out of "Registration".
+    stems = set(words)
+    for w in words:
+        if len(w) > 3 and w.endswith("s"):
+            stems.add(w[:-1])
+    words = sorted(stems)
+    hits = {}
+    for name, count in pool.items():
+        low = name.lower()
+        if any(re.search(r"\b" + re.escape(w), low) for w in words):
+            hits[name] = count
+    return hits
+
 # ---------------------------------------------------------------------------
 def answer_household_income(spec, question):
     puma = spec["geography"].get("code") if spec["geography"]["kind"] == "puma" else None
@@ -151,6 +196,13 @@ def answer_household_income(spec, question):
                       explanation=f"PUMA {puma} has no occupied-household records "
                                   f"in the ACS 2024 DC sample.",
                       missingEvidence=[f"ACS 2024 records for PUMA {puma}"])
+    # A free-form question often states no year. Refusing it would be pedantic
+    # when exactly one year is loaded; assume that year and say so in the
+    # answer rather than silently.
+    assumed_year = spec.get("year") is None
+    if assumed_year:
+        spec = {**spec, "year": INCOME["year"],
+                "timeframe": f"{INCOME['year']} (assumed: no year was stated)"}
     if spec["year"] != INCOME["year"]:
         return result(spec, question, status="unsupported",
                       title=f"{spec['year']} is not loaded",
@@ -186,7 +238,9 @@ def answer_household_income(spec, question):
             f"which is {share:.1%}. Weighted from {n_below:,} of {n_total:,} "
             f"ACS household records using the Census household weight, with "
             f"income adjusted to constant {INCOME['year']} dollars "
-            f"(ADJINC {INCOME['adjinc']:.6f})."),
+            f"(ADJINC {INCOME['adjinc']:.6f})."
+            + (f" No year was stated in the question, so {INCOME['year']} was "
+               f"used; it is the only year loaded." if assumed_year else "")),
         estimate={"kind": "count", "value": round(below_w),
                   "unit": "households", "populationShare": round(share, 4),
                   "denominator": round(total_w)},
@@ -206,6 +260,9 @@ def answer_household_income(spec, question):
 
 
 def answer_service_requests(spec, question):
+    assumed_year = spec.get("year") is None
+    if assumed_year:
+        spec = {**spec, "year": max(int(y) for y in SR)}
     year = str(spec["year"])
     if year not in SR:
         return result(spec, question, status="unsupported",
@@ -216,6 +273,28 @@ def answer_service_requests(spec, question):
     ward = spec["geography"].get("code") if spec["geography"]["kind"] == "ward" else None
     label = WARD_LABEL.get(ward, "Ward ?") if ward else "the District"
     service = (spec.get("service") or "").strip() or None
+
+    # "which ward complains most about rats" asks for a ranking. Returning a
+    # District total answers a different question, so when the wording asks
+    # which/most/highest and no ward was given, rank the wards we already hold
+    # and answer with the top one, saying that is what happened.
+    wants_rank = (not ward) and re.search(
+        r"\bwhich ward\b|\bwhat ward\b|\bmost\b|\bhighest\b|\bworst\b|"
+        r"\btop\b|\brank", question, re.I)
+    ranked = None
+    if wants_rank:
+        svc = (spec.get("service") or "").strip()
+        per = {}
+        for wlabel, types in block["byWardService"].items():
+            if not wlabel.startswith("Ward"):
+                continue
+            per[wlabel] = (sum(match_services(svc, types).values()) if svc
+                           else block["byWard"].get(wlabel, 0))
+        per = {k: v for k, v in per.items() if v}
+        if per:
+            ranked = sorted(per.items(), key=lambda kv: -kv[1])
+            ward = ranked[0][0].split()[-1]
+            spec = {**spec, "geography": {"kind": "ward", "code": ward}}
 
     if ward:
         pool = block["byWardService"].get(WARD_LABEL[ward], {})
@@ -228,7 +307,7 @@ def answer_service_requests(spec, question):
         total = block["total"]
 
     if service:
-        hits = {k: v for k, v in pool.items() if service.lower() in k.lower()}
+        hits = match_services(service, pool)
         if not hits:
             close = sorted(pool, key=lambda k: -pool[k])[:8]
             return result(
@@ -249,9 +328,16 @@ def answer_service_requests(spec, question):
         spec, question,
         title=f"{count:,} requests",
         explanation=(
-            f"{count:,} 311 service requests were recorded in {label} in "
-            f"{year}. {detail} These are recorded requests, not unique "
-            f"residents, and not completed work."),
+            (f"{ranked[0][0]} recorded the most, {count:,}, of the eight "
+             f"wards in {year}. {detail} Full ranking: "
+             + ", ".join(f"{w.split()[-1]}: {c:,}" for w, c in ranked) + ". "
+             if ranked else
+             f"{count:,} 311 service requests were recorded in {label} in "
+             f"{year}. {detail} ")
+            + "These are recorded requests, not unique "
+            "residents, and not completed work."
+            + (f" No year was stated, so {year} was used, the most recent "
+               f"loaded." if assumed_year else "")),
         estimate={"kind": "count", "value": count, "unit": "requests",
                   "denominator": total,
                   "populationShare": round(count / total, 4) if total else None},
@@ -259,6 +345,9 @@ def answer_service_requests(spec, question):
         limitations=[
             "A count of recorded requests. One resident may file many; some "
             "problems are never reported at all.",
+            *(["Ranked by recorded request volume, which reflects reporting "
+               "behaviour as much as underlying conditions. A ward that reports "
+               "less is not necessarily better off."] if ranked else []),
             "Not a measure of need, service quality, or completion time.",
             "Requests without a ward are excluded from ward totals.",
         ],
@@ -276,6 +365,24 @@ def answer_health_prevalence(spec, question):
         have = sorted({k.split("|")[1] for k in PLACES["byTract"]
                        if k.startswith(f"{tract}|")})
         if not have:
+            looks_like_a_place = not re.fullmatch(r"\d{11}", str(tract or ""))
+            if looks_like_a_place:
+                return result(
+                    spec, question, status="unsupported",
+                    title="That needs a tract number",
+                    explanation=(
+                        (f'"{tract}" is a place name, not a census tract. '
+                         if tract else "No census tract was identified. ")
+                        + f"Tract "
+                        f"health estimates are published per tract, and this "
+                        f"service does not hold a neighbourhood-to-tract lookup, "
+                        f"so guessing which tracts you meant would be inventing "
+                        f"the boundary. Give an 11-digit tract id, for example "
+                        f"11001000101."),
+                    missingEvidence=[
+                        (f'a census tract id for "{tract}"' if tract
+                         else "a census tract id"),
+                        "a neighbourhood-to-tract crosswalk"])
             return result(spec, question, status="unsupported",
                           title="Tract not found",
                           explanation=f"No PLACES estimates for tract {tract}.",
@@ -311,6 +418,107 @@ def answer_health_prevalence(spec, question):
             "The target population is measure-specific and set by the publisher.",
             "Already modelled: not independent data for validating another model.",
         ])
+
+
+# --- who a policy reaches --------------------------------------------------
+# The headline of a policy answer is one number. The question people actually
+# have is who it lands on, so the per-group impacts the engine already computes
+# are rendered as a table rather than thrown away.
+
+GROUP_LABEL = {
+    "single_no_kids":   "One adult, no children",
+    "couple_no_kids":   "Two adults, no children",
+    "single_parent":    "One adult with children",
+    "couple_with_kids": "Two adults with children",
+    "other":            "Other household",
+    "Q1": "Lowest fifth by income", "Q2": "Second fifth",
+    "Q3": "Middle fifth", "Q4": "Fourth fifth",
+    "Q5": "Highest fifth by income",
+}
+GROUP_ORDER = {n: i for i, n in enumerate(
+    ["single_parent", "couple_with_kids", "single_no_kids", "couple_no_kids",
+     "other", "Q1", "Q2", "Q3", "Q4", "Q5"])}
+# Below this many ACS records a group interval is too thin to publish at all.
+MIN_PUBLISH_N = 10
+try:
+    from model.params import LOW_SAMPLE_N
+except Exception:      # noqa: BLE001
+    LOW_SAMPLE_N = 100
+
+
+def _money(x: float) -> str:
+    return f"{'+' if x >= 0 else '-'}${abs(x):,.0f}"
+
+
+def _group_row(g: Dict[str, Any]) -> Dict[str, Any]:
+    """One subgroup, as the front end's group shape.
+
+    The share column carries the share of the group the transfer reaches, which
+    is the only group quantity that is a share and so the only one the interval
+    column can honestly hold. The dollar change rides in the label, because a
+    dollar figure rendered through a percent formatter would be a wrong number.
+    """
+    name = g["group"]
+    label = GROUP_LABEL.get(name, name)
+    d = g["disposable_income_delta"]
+    label = (f"{label} · {_money(d)}/yr "
+             f"({_money(g['disposable_income_delta_p05'])} to "
+             f"{_money(g['disposable_income_delta_p95'])})")
+    if g["low_sample"]:
+        label += " · thin sample"
+    if g["sample_n"] < MIN_PUBLISH_N:
+        return {"label": label, "validRecords": g["sample_n"], "suppressed": True,
+                "share": None, "interval": None,
+                "reason": f"Only {g['sample_n']} records; not published."}
+    return {"label": label, "validRecords": g["sample_n"], "suppressed": False,
+            "share": g["pct_better_off"],
+            "interval": {"lower": g["pct_better_off_p05"],
+                         "upper": g["pct_better_off_p95"]}}
+
+
+def impact_breakdowns(sim: Dict[str, Any], understood: str) -> Dict[str, Any]:
+    by_group = sim.get("by_group", [])
+    tables, reached, total = [], 0.0, 0.0
+    for gtype, title in (("household_type", "By household type"),
+                         ("income_quintile", "By income group")):
+        rows = sorted((g for g in by_group if g["group_type"] == gtype),
+                      key=lambda g: GROUP_ORDER.get(g["group"], 99))
+        if not rows:
+            continue
+        tables.append({"label": title, "groups": [_group_row(g) for g in rows],
+                       "columns": ["Group and change in disposable income",
+                                   "ACS records", "Share reached",
+                                   "90% interval"]})
+        if gtype == "household_type":          # a partition, so it can be summed
+            for g in rows:
+                total += g["households_weighted"]
+                reached += g["households_weighted"] * g["pct_better_off"]
+    n = sim["n_households"]
+    return {
+        "question": {"wording": understood,
+                     "responseCodes": {"reached": "Households reached",
+                                       "unaffected": "Households unaffected"}},
+        "overall": {"sampleRecords": n, "validRecords": n, "missingRecords": 0},
+        "sampleText": (f"{n:,} DC household records, weighted to "
+                       f"{round(total):,} households. Groups are ACS record "
+                       f"counts; shares and intervals are weighted."),
+        "summaryLabel": "Who the policy reaches, by group",
+        "responseCounts": {"reached": round(reached),
+                           "unaffected": round(total - reached)},
+        "breakdowns": tables,
+        "publicationRule": {"description":
+            f"A group with fewer than {MIN_PUBLISH_N} ACS records is not "
+            f"published. A group under {LOW_SAMPLE_N} is shown and marked a "
+            f"thin sample: the interval is real but wide."},
+        "limitations": [
+            "The share reached is the share of the group the transfer pays "
+            "anything to. It is not a poverty change and not a welfare claim.",
+            "Dollar changes are the median across parameter draws, per "
+            "household per year, in constant 2024 dollars.",
+            "Groups are defined on the household as the ACS records it, so a "
+            "household appears in exactly one row of each table.",
+        ],
+    }
 
 
 def answer_policy_simulation(spec, question):
@@ -352,6 +560,7 @@ def answer_policy_simulation(spec, question):
                                f"Bayesian bootstrap over households.",
                      "limitations": "Parameter and sampling uncertainty only. "
                                     "It does not cover the model being wrong."},
+        surveyAnalysis=impact_breakdowns(sim, " · ".join(parsed.understood)),
         limitations=sim.get("warnings", [])[:6] + [
             "A simulation, not an observation. The 2021 CTC backtest missed by "
             "0.7 points and is reported as a miss in docs/backtest.md."],

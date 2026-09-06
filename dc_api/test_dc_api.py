@@ -135,3 +135,111 @@ def test_interpreter_does_not_drop_an_extra_restriction():
                      "income below $50,000 in 2024?")
     assert spec["kind"] == "unsupported"
     assert spec["unsupportedConstraints"]
+
+
+# --- service-type matching, which free-form questions exercised hard --------
+def _pool():
+    pool = {}
+    for w in S.SR["2025"]["byWardService"].values():
+        for k, v in w.items():
+            pool[k] = pool.get(k, 0) + v
+    return pool
+
+
+def test_a_compound_phrase_finds_the_real_service_types():
+    """Claude returns "rodent/rat complaints"; the catalogue says "Rodent
+    Inspection and Treatment". Plain substring matching found neither."""
+    hits = S.match_services("rodent/rat complaints", _pool())
+    assert "Rodent Inspection and Treatment" in hits
+
+
+def test_a_term_does_not_match_a_word_that_merely_contains_it():
+    """"rat" must not match "DMV - Vehicle Registration Issues"."""
+    assert "DMV - Vehicle Registration Issues" not in S.match_services("rat", _pool())
+
+
+def test_the_plural_people_type_matches_the_singular_in_the_catalogue():
+    assert S.match_services("potholes", _pool()).get("Pothole")
+
+
+def test_a_place_name_is_not_treated_as_a_tract_id():
+    spec = dict(interpret("What was diabetes prevalence in DC tract 11001000101 in 2023?"))
+    spec["geography"] = {"kind": "tract", "code": "Anacostia"}
+    r = S.run_query("whats the diabetes rate around Anacostia", spec)
+    assert r["status"] == "unsupported"
+    assert "place name" in r["explanation"]
+    assert any("crosswalk" in m for m in r["missingEvidence"])
+
+
+def test_an_unstated_year_is_assumed_and_disclosed():
+    spec = dict(interpret("How many DC households had annual income below $40,000 in 2024?"))
+    spec["year"] = None
+    r = S.run_query("how many households under forty grand", spec)
+    assert r["status"] == "ok"
+    assert "no year was stated" in r["explanation"].lower()
+
+
+# --- ranking, and the subgroup impacts that are the point of a policy answer -
+def test_which_ward_is_answered_with_a_ward_not_a_district_total():
+    """"Which ward complains most" asks for a ranking. Answering with a
+    District-wide count answers a different question."""
+    r = ask("Which ward reported the most potholes in 2025?")
+    assert r["status"] == "ok"
+    assert r["geography"]["kind"] == "ward"
+    top = max(S.SR["2025"]["byWardService"].items(),
+              key=lambda kv: sum(S.match_services("potholes", kv[1]).values()))[0]
+    assert r["geography"]["code"] == top.split()[-1]
+    assert "ranking" in r["explanation"].lower()
+
+
+def test_a_plain_ward_count_is_not_turned_into_a_ranking():
+    r = ask("How many 311 requests were recorded in Ward 8 in 2025?")
+    assert r["geography"]["code"] == "8"
+    assert "ranking" not in r["explanation"].lower()
+
+
+def _policy():
+    return ask("What if we gave $300 a month per child under 6 to DC families?")
+
+
+def test_a_policy_answer_reports_who_it_reaches():
+    r = _policy()
+    assert r["status"] == "ok"
+    sa = r["surveyAnalysis"]
+    labels = {b["label"] for b in sa["breakdowns"]}
+    assert {"By household type", "By income group"} <= labels
+    for b in sa["breakdowns"]:
+        assert len(b["columns"]) == 4, "the table labels its own columns"
+        assert "Cost barriers" not in b["columns"], \
+            "a policy table must not wear the health survey's header"
+
+
+def test_subgroup_intervals_are_not_zero_width_where_the_policy_lands():
+    """A share reached is decided by the policy rules, so without the bootstrap
+    every draw gave the identical number and the interval collapsed."""
+    r = _policy()
+    reached = [g for b in r["surveyAnalysis"]["breakdowns"]
+               for g in b["groups"] if not g["suppressed"] and g["share"] > 0]
+    assert reached
+    for g in reached:
+        lo, hi = g["interval"]["lower"], g["interval"]["upper"]
+        assert hi > lo, f"zero-width interval on {g['label']}"
+        assert lo <= g["share"] <= hi
+
+
+def test_a_per_child_transfer_reaches_no_childless_household():
+    r = _policy()
+    hh = next(b for b in r["surveyAnalysis"]["breakdowns"]
+              if b["label"] == "By household type")
+    childless = [g for g in hh["groups"] if "no children" in g["label"]]
+    assert len(childless) == 2
+    for g in childless:
+        assert g["share"] == 0
+        assert g["interval"]["lower"] == g["interval"]["upper"] == 0
+
+
+def test_the_reached_count_is_consistent_with_the_household_type_table():
+    r = _policy()
+    sa = r["surveyAnalysis"]
+    total = sa["responseCounts"]["reached"] + sa["responseCounts"]["unaffected"]
+    assert abs(total - 329_688) < 2, "household types must partition DC"

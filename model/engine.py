@@ -309,14 +309,28 @@ def outcomes_for(pop, transfer, new_income, mask=None, boot=None):
     }
 
 
-def group_stats(pop, transfer, new_income, mask):
-    """Per-group distributional summary used by by_group and by_metro rankings."""
+def group_stats(pop, transfer, new_income, mask, boot=None):
+    """
+    Per-group distributional summary used by by_group and by_metro rankings.
+
+    `boot` does the same job here as in outcomes_for. Without it the share
+    reached carries no uncertainty at all: whether a household is paid is
+    decided by the policy rules, not by any drawn parameter, so across every
+    seed the share came out to the identical number and the interval printed as
+    53.7%-53.7%. That is not a narrow interval, it is a missing one. With the
+    bootstrap the interval answers the question actually being asked -- how much
+    the share would move on a different sample of DC households.
+    """
     dw = pop.dw[mask]
     if mask.sum() == 0 or dw.sum() == 0:
         return None
+    bs = boot[:, mask] if boot is not None else None
+    dw_s = dw[None, :] * bs if bs is not None else dw[None, :]
+    tot = dw_s.sum(1)
+    tot = np.where(tot > 0, tot, 1.0)
     delta = (new_income[:, mask] - pop.inc[mask][None, :])
-    weighted_delta = (delta * dw[None, :]).sum(1) / dw.sum()
-    better = ((transfer[:, mask] > 0) * dw[None, :]).sum(1) / dw.sum()
+    weighted_delta = (delta * dw_s).sum(1) / tot
+    better = ((transfer[:, mask] > 0) * dw_s).sum(1) / tot
     return {
         "households_weighted": float(dw.sum()),
         "sample_n": int(mask.sum()),
@@ -324,6 +338,10 @@ def group_stats(pop, transfer, new_income, mask):
         "disposable_income_delta_p05": float(np.percentile(weighted_delta, 5)),
         "disposable_income_delta_p95": float(np.percentile(weighted_delta, 95)),
         "pct_better_off": float(np.median(better)),
+        # The share reached is the one group quantity that is a share, so it is
+        # the one that can carry an interval a reader can compare across groups.
+        "pct_better_off_p05": float(np.percentile(better, 5)),
+        "pct_better_off_p95": float(np.percentile(better, 95)),
         "low_sample": bool(mask.sum() < P.LOW_SAMPLE_N),
     }
 
@@ -348,7 +366,7 @@ def run(policy_spec, policy_id, label, n_seeds=500, seed=DEFAULT_SEED, pop=None)
     # ---- national by_group -------------------------------------------------
     by_group = []
     for (gtype, gname), mask in pop.masks.items():
-        st = group_stats(pop, transfer, new_income, mask)
+        st = group_stats(pop, transfer, new_income, mask, boot=boot)
         if st is None:
             continue
         by_group.append({"group_type": gtype, "group": gname, **st})
@@ -369,7 +387,7 @@ def run(policy_spec, policy_id, label, n_seeds=500, seed=DEFAULT_SEED, pop=None)
             if gtype == "census_region":
                 continue  # a metro sits inside one region; not informative
             sub = mmask & gmask
-            st = group_stats(pop, transfer, new_income, sub)
+            st = group_stats(pop, transfer, new_income, sub, boot=boot)
             if st is None or st["households_weighted"] == 0:
                 continue
             ranked.append({"group_type": gtype, "group": gname, **st})
