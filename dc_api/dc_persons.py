@@ -26,7 +26,14 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 PARQUET = REPO / "data" / "processed" / "dc_persons.parquet"
-COLS = ["SERIALNO", "ST", "AGEP", "WAGP", "WKHP", "WKWN", "ESR", "PWGTP", "ADJINC"]
+COLS = ["SERIALNO", "ST", "AGEP", "WAGP", "WKHP", "WKWN", "ESR", "PWGTP",
+        "ADJINC", "SEMP", "INTP", "RETP", "OIP", "PAP", "SSIP", "SSP"]
+# What DC actually taxes. Wages, self-employment, interest/dividends/rental,
+# retirement distributions and other income are in the base. Public
+# assistance and SSI are not taxable, and the District excludes Social
+# Security benefits entirely, so none of those three are counted.
+TAXABLE_COMPONENTS = ["WAGP", "SEMP", "INTP", "RETP", "OIP"]
+UNTAXED_COMPONENTS = ["PAP", "SSIP", "SSP"]
 # ESR 1,2,4,5 are the employed codes; 3 is unemployed, 6 not in labour force.
 EMPLOYED = {1.0, 2.0, 4.0, 5.0}
 WEEKS_PER_YEAR = 52
@@ -66,6 +73,10 @@ def build() -> "Any":
     # where the record reports them.
     df["weeks"] = df["WKWN"] if "WKWN" in df.columns else float("nan")
     df["weeks"] = df["weeks"].where(df["weeks"].between(1, 52))
+    have = [c for c in TAXABLE_COMPONENTS if c in df.columns]
+    df["taxable_income"] = sum(df[c].fillna(0.0) for c in have) * adj
+    df["untaxed_income"] = sum(df[c].fillna(0.0) for c in UNTAXED_COMPONENTS
+                               if c in df.columns) * adj
     df["employed"] = df["ESR"].isin(EMPLOYED)
     df["adult"] = df["AGEP"] >= 18
     df["weight"] = df["PWGTP"].fillna(0.0)
@@ -76,8 +87,9 @@ def build() -> "Any":
     ok = (df["hours"] > 0) & (df["wage_income"] > 0) & df["employed"] & df["weeks"].notna()
     df["hourly_wage"] = (df["wage_income"] / (df["hours"] * df["weeks"])).where(ok)
 
-    out = df[["SERIALNO", "AGEP", "wage_income", "hours", "weeks", "employed",
-              "adult", "weight", "hourly_wage"]].copy()
+    out = df[["SERIALNO", "AGEP", "wage_income", "taxable_income",
+              "untaxed_income", "hours", "weeks", "employed", "adult", "weight",
+              "hourly_wage"]].copy()
     PARQUET.parent.mkdir(parents=True, exist_ok=True)
     out.to_parquet(PARQUET, index=False)
     return out

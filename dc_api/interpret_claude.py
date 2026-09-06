@@ -37,7 +37,7 @@ or invent any number. Return only the request.
 
 Return JSON matching this schema exactly:
 {"kind": one of "household_income" | "service_requests" | "health_prevalence" \
-| "health_affordability" | "policy_simulation" | "unsupported",
+| "health_affordability" | "policy_simulation" | "tax_policy" | "unsupported",
  "jurisdiction": "DC" | "other" | "unspecified",
  "geography": {"kind": "district"|"puma"|"ward"|"tract"|"other", "code": string or null},
  "year": integer or null,
@@ -48,6 +48,8 @@ Return JSON matching this schema exactly:
  "outcome": string,
  "population": string,
  "timeframe": string,
+ "taxChangePoints": number or null,
+ "taxChangeProportional": number or null,
  "unsupportedConstraints": [string],
  "clarification": string or null}
 
@@ -67,6 +69,7 @@ Rules:
   health_prevalence  -> "CDC measure-specific population"
   health_affordability -> "Noninstitutionalized DC adults aged 18 or older"
   policy_simulation  -> "Occupied DC households"
+  tax_policy         -> "Occupied DC households"
 - household_income covers all occupied households in DC or one PUMA. Any other
   population restriction is unsupported.
 - service_requests counts recorded requests, not people and not completion time.
@@ -74,6 +77,22 @@ Rules:
   example "$300 a month per child, phased out over $150k". Keep the full
   description in outcome so the server can parse the amounts itself. Do not
   compute its effect.
+- tax_policy is for a change to the DC INCOME TAX schedule. The server holds
+  the published DC rate schedule and computes the effect; you only say how big
+  the change is. Put it in exactly one of:
+    taxChangePoints        percentage points added to every marginal rate.
+                           "raise income tax by 5%" and "5 points" are both
+                           this: a rate expressed in percent IS points. A cut
+                           is negative.
+    taxChangeProportional  percent change in the tax OWED at the same income,
+                           for phrasings like "raise everyone's tax bill by
+                           10%" or "a 10% surcharge on tax owed".
+  These differ by more than an order of magnitude, so if the wording is
+  genuinely ambiguous choose taxChangePoints and say so in clarification.
+  Do NOT state any tax rate, bracket or revenue figure yourself.
+- A sales tax, property tax, payroll tax or business tax is NOT tax_policy:
+  only the individual income tax schedule is held. Use "unsupported" and put
+  the tax named in unsupportedConstraints.
 - Ward codes are the digit alone, "7". Tract codes are the 11-digit GEOID.
 - Record any ambiguity in clarification.
 
@@ -104,7 +123,8 @@ def available() -> bool:
 
 
 ALLOWED = {"household_income", "service_requests", "health_prevalence",
-           "health_affordability", "policy_simulation", "unsupported"}
+           "health_affordability", "policy_simulation", "tax_policy",
+           "unsupported"}
 
 
 def interpret(question: str, timeout: float = 20.0) -> Optional[Dict[str, Any]]:
@@ -147,10 +167,20 @@ def interpret(question: str, timeout: float = 20.0) -> Optional[Dict[str, Any]]:
         code = geo.get("code")
         spec["geography"] = {"kind": geo["kind"],
                              "code": str(code) if code is not None else None}
-    for f, typ in (("year", int), ("incomeThreshold", float)):
+    for f, typ in (("year", int), ("incomeThreshold", float),
+                   ("taxChangePoints", float), ("taxChangeProportional", float)):
         v = raw.get(f)
-        if isinstance(v, (int, float)):
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
             spec[f] = typ(v)
+    # A tax change with no size is not a tax question the server can run.
+    if spec["kind"] == "tax_policy" and (spec.get("taxChangePoints") is None
+                                         and spec.get("taxChangeProportional") is None):
+        spec["kind"] = "unsupported"
+        spec["unsupportedConstraints"] = (spec.get("unsupportedConstraints") or []) + [
+            "a tax change was described without a size, so nothing could be computed"]
+    # Both at once is ambiguous; points is the reading the offline parser uses.
+    if spec.get("taxChangePoints") is not None:
+        spec["taxChangeProportional"] = None
     if raw.get("incomeComparison") in ("lt", "lte"):
         spec["incomeComparison"] = raw["incomeComparison"]
     for f in ("measure", "service", "clarification"):

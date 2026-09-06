@@ -136,6 +136,60 @@ The cache makes the running service offline. What it answers, and from what:
 | Tract health prevalence | CDC PLACES, 40 measures, carrying the publisher's own confidence limits |
 | A described cash transfer | our microsimulation, run on a DC-only population built from the same PUMS |
 
+**Tax questions are computed, not narrated.** Asked to simulate a 5% income
+tax rise, the service used to say no tax rates were in the evidence. That was
+the guardrail working — the reasoning layer may not supply a rate from memory —
+but it was still a hole. The fix was not to relax the rule. It was to fetch the
+schedule from the body that publishes it.
+
+`model/dc_tax.py` carries the DC individual income tax schedule from the
+[Office of Tax and Revenue](https://otr.cfo.dc.gov/page/dc-individual-and-fiduciary-income-tax-rates),
+cross-checked against the 2024 D-40 booklet (p.4 rates, p.10 standard
+deduction). It is **self-checking**: each bracket's base amount must equal the
+tax accumulated below it, asserted at import, so a mistranscribed rate cannot
+pass silently. A test independently asserts every published boundary — $400 at
+$10,000 through $91,525 at $1,000,000.
+
+`dc_api/tax_sim.py` then computes liability per household and hands the change
+to the *same* outcome functions the transfer path uses, so no second set of
+poverty arithmetic exists to drift out of step. +5 points on every marginal
+rate raises **$2.26B a year** (90% interval $2.17B–$2.37B) against a $3.58B
+base; 271,203 households owe more and the rest owe nothing extra because their
+taxable income is below the standard deduction. The tax base is built from the
+taxable components of the person file — Social Security is excluded because the
+District does not tax it — and there is no behavioural response, so revenue is
+an upper bound.
+
+Only the individual income tax schedule is held. A sales or property tax
+question matched on the bare word "tax" and was answered with income tax
+arithmetic; it now falls to the reasoning layer instead, which is a missing
+number rather than a wrong one.
+
+### The change is a paired difference
+
+Building the tax path exposed a real defect in the engine. `baseline` was a
+fixed design-weighted scalar while `median` was a bootstrapped level, so
+`median - baseline` mixed the policy effect with sampling noise in the *level* —
+noise common to both terms. The consequences were visible in both directions:
+
+| | naive (level − level) | paired |
+|---|---|---|
+| $400/mo per child under 6 | −1.33 pts, 90% **[−7.25, +4.56]** | −1.03 pts, 90% **[−2.75, −0.36]** |
+| +5 points on every rate | −0.06 pts, 90% [−5.50, +6.14] | **+0.00 pts** |
+
+The tax row is the giveaway: a tax rise reported child poverty going *down*,
+which is arithmetically impossible — every household's income weakly falls, so
+the poor set can only grow. The sign was noise. `_band` now recomputes the
+baseline under each bootstrap draw and reports the change as a paired
+difference, which cancels the common variation. The transfer interval stops
+straddling zero, and the tax figure is exactly zero because households below
+the poverty line have taxable income under the standard deduction and so owe
+nothing either way.
+
+The pre-registered backtest is unaffected and its artefacts are byte-identical:
+it deliberately runs without the bootstrap, where the paired and naive changes
+coincide.
+
 **It always answers.** A service that replies "more evidence is needed" has
 told the user nothing, and in front of an audience it reads as broken. Every
 question now gets an answer. The architecture that makes that safe:
@@ -237,7 +291,7 @@ recomputation from the cache, and the unanswerable question stays unanswered.
 ### Checks
 
 ```bash
-python -m pytest app/tests dc_api -q   # 110 tests
+python -m pytest app/tests dc_api -q   # 127 tests
 python app/tests/smoke_demo.py      # drives the running app in a browser
 python model/diagnostics.py         # 25 engine invariants + MCMC convergence
 bash model/reproduce.sh             # rebuild every artefact from raw PUMS

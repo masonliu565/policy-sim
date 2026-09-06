@@ -27,6 +27,7 @@ def base() -> Dict[str, Any]:
         "measure": None, "service": None, "outcome": "Unspecified outcome",
         "population": "Unspecified population", "timeframe": "Unspecified timeframe",
         "unsupportedConstraints": [], "clarification": None,
+        "taxChangePoints": None, "taxChangeProportional": None,
     }
 
 
@@ -70,6 +71,46 @@ def interpret(question: str) -> Dict[str, Any]:
                  population="Service requests, not unique residents",
                  timeframe=m.group(2))
         return s
+
+    # A change to the income tax schedule. "by 5%" is ambiguous between five
+    # percentage points and five percent more tax owed -- the two differ by
+    # more than an order of magnitude -- so the reading used is recorded in
+    # clarification and repeated in the answer rather than chosen silently.
+    # Only the individual income tax schedule is held. A sales or property tax
+    # question matched this pattern on the bare word "tax" and was answered
+    # with income tax arithmetic, which is a wrong answer rather than a
+    # missing one.
+    other_tax = re.search(
+        r"\b(sales|property|payroll|business|corporate|excise|estate|"
+        r"inheritance|gas|fuel|hotel|use|franchise|soda|carbon|capital gains|"
+        r"gross receipts)\s+tax", q, re.I)
+    if re.search(r"\btax", q, re.I) and not other_tax:
+        m = re.search(
+            r"\b(rais\w*|increas\w*|hik\w*|add|up|cut\w*|lower\w*|reduc\w*|drop\w*)\b"
+            r"[^.]{0,60}?\btax\w*\b[^.]{0,60}?(?:by\s+)?\$?"
+            r"([0-9]+(?:\.[0-9]+)?)\s*(percentage points?|points?|pts?|percent|%)"
+            r"|\btax\w*\b[^.]{0,60}?\b(rais\w*|increas\w*|hik\w*|cut\w*|lower\w*|"
+            r"reduc\w*|drop\w*)\b[^.]{0,40}?(?:by\s+)?\$?"
+            r"([0-9]+(?:\.[0-9]+)?)\s*(percentage points?|points?|pts?|percent|%)",
+            q, re.I)
+        if m:
+            verb = (m.group(1) or m.group(4) or "").lower()
+            amount = float(m.group(2) or m.group(5))
+            unit = (m.group(3) or m.group(6) or "%").lower()
+            down = bool(re.match(r"cut|lower|reduc|drop", verb))
+            signed = -amount if down else amount
+            s = base()
+            note = None
+            if unit.startswith(("percent", "%")) and "point" not in unit:
+                note = ("Read as percentage points on every marginal rate. "
+                        "A proportional change to the tax owed is a different "
+                        "policy and raises far less.")
+            s.update(kind="tax_policy", taxChangePoints=signed,
+                     outcome="Effect of a change to the DC income tax schedule",
+                     population="Occupied DC households",
+                     timeframe="2024 incomes, 2024 DC schedule",
+                     clarification=note)
+            return s
 
     # "Which ward has the most X" is the shape people actually type, and it is
     # a ranking, not a count. The server ranks the wards; this only has to route

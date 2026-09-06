@@ -494,7 +494,15 @@ def _group_row(g: Dict[str, Any]) -> Dict[str, Any]:
                          "upper": g["pct_better_off_p95"]}}
 
 
-def impact_breakdowns(sim: Dict[str, Any], understood: str) -> Dict[str, Any]:
+def impact_breakdowns(sim: Dict[str, Any], understood: str,
+                      share_label: str = "Share reached",
+                      reached: str = "Households reached",
+                      unaffected: str = "Households unaffected",
+                      summary_label: str = "Who the policy reaches, by group",
+                      share_note: str = "The share reached is the share of the "
+                                        "group the transfer pays anything to. It "
+                                        "is not a poverty change and not a "
+                                        "welfare claim.") -> Dict[str, Any]:
     by_group = sim.get("by_group", [])
     tables, reached, total = [], 0.0, 0.0
     for gtype, title in (("household_type", "By household type"),
@@ -505,7 +513,7 @@ def impact_breakdowns(sim: Dict[str, Any], understood: str) -> Dict[str, Any]:
             continue
         tables.append({"label": title, "groups": [_group_row(g) for g in rows],
                        "columns": ["Group and change in disposable income",
-                                   "ACS records", "Share reached",
+                                   "ACS records", share_label,
                                    "90% interval"]})
         if gtype == "household_type":          # a partition, so it can be summed
             for g in rows:
@@ -514,13 +522,13 @@ def impact_breakdowns(sim: Dict[str, Any], understood: str) -> Dict[str, Any]:
     n = sim["n_households"]
     return {
         "question": {"wording": understood,
-                     "responseCodes": {"reached": "Households reached",
-                                       "unaffected": "Households unaffected"}},
+                     "responseCodes": {"reached": reached,
+                                       "unaffected": unaffected}},
         "overall": {"sampleRecords": n, "validRecords": n, "missingRecords": 0},
         "sampleText": (f"{n:,} DC household records, weighted to "
                        f"{round(total):,} households. Groups are ACS record "
                        f"counts; shares and intervals are weighted."),
-        "summaryLabel": "Who the policy reaches, by group",
+        "summaryLabel": summary_label,
         "responseCounts": {"reached": round(reached),
                            "unaffected": round(total - reached)},
         "breakdowns": tables,
@@ -529,8 +537,7 @@ def impact_breakdowns(sim: Dict[str, Any], understood: str) -> Dict[str, Any]:
             f"published. A group under {LOW_SAMPLE_N} is shown and marked a "
             f"thin sample: the interval is real but wide."},
         "limitations": [
-            "The share reached is the share of the group the transfer pays "
-            "anything to. It is not a poverty change and not a welfare claim.",
+            share_note,
             "Dollar changes are the median across parameter draws, per "
             "household per year, in constant 2024 dollars.",
             "Groups are defined on the household as the ACS records it, so a "
@@ -558,10 +565,15 @@ def answer_policy_simulation(spec, question):
     sim = run_dc(parsed.levers)
     cpr = sim["impact"]["child_poverty_rate"]
     base, med = cpr["baseline"], cpr["median"]
+    # The CHANGE is a paired difference: the baseline is recomputed under each
+    # bootstrap draw, so the interval measures the policy effect instead of
+    # sampling noise in the level. See _band in model/engine.py.
+    chg, chg_lo, chg_hi = (cpr["change_median"], cpr["change_p05"],
+                           cpr["change_p95"])
     spec = {**spec, "outcome": "Change in DC child poverty rate"}
     return result(
         spec, question,
-        title=f"{100 * (med - base):+.1f} points",
+        title=f"{100 * chg:+.1f} points",
         explanation=(
             "Read as: " + " · ".join(parsed.understood) + ". Simulated on "
             f"{sim['n_households']:,} DC household records from the ACS 2024 "
@@ -570,17 +582,17 @@ def answer_policy_simulation(spec, question):
             f"costs ${sim['impact']['annual_cost_usd']['median'] / 1e6:,.0f}M a "
             f"year in DC."),
         estimate={"kind": "percentage_point_change",
-                  "value": round(100 * (med - base), 2), "unit": "points",
+                  "value": round(100 * chg, 2), "unit": "points",
                   # Spelled out, because the front end's default formatter
                   # rounds a non-percent unit to a whole number and -1.33
                   # points would show as "-1". One decimal, not two: the
                   # interval is several points wide.
-                  "displayValue": f"{100 * (med - base):+.1f} points",
+                  "displayValue": f"{100 * chg:+.1f} points",
                   "label": "change in the DC child poverty rate"},
-        uncertainty={"level": 0.9, "lower": round(100 * (cpr["p05"] - base), 2),
-                     "upper": round(100 * (cpr["p95"] - base), 2),
-                     "displayRange": f"{100 * (cpr['p05'] - base):+.1f} to "
-                                     f"{100 * (cpr['p95'] - base):+.1f} points",
+        uncertainty={"level": 0.9, "lower": round(100 * chg_lo, 2),
+                     "upper": round(100 * chg_hi, 2),
+                     "displayRange": f"{100 * chg_lo:+.1f} to "
+                                     f"{100 * chg_hi:+.1f} points",
                      "method": f"{sim['n_seeds']} Latin hypercube draws over "
                                f"take-up, labour supply and MPC, with a "
                                f"Bayesian bootstrap over households.",
@@ -617,6 +629,101 @@ def fact_source_kinds(source: str) -> List[str]:
     if F.PLACES_SRC in source:
         out.append("health_prevalence")
     return out
+
+
+# --- a change to the tax schedule ------------------------------------------
+# The published DC rate schedule, cited where it came from. A rate recalled by
+# a language model is exactly the number this project will not print, so the
+# schedule was retrieved from the body that publishes it and checked for
+# internal consistency at import. See model/dc_tax.py.
+OTR_EVIDENCE = {
+    "publisher": "DC Office of Tax and Revenue",
+    "dataset": "dc-individual-income-tax-rate-schedule-2024",
+    "url": "https://otr.cfo.dc.gov/page/dc-individual-and-fiduciary-income-tax-rates",
+    "referencePeriod": "tax years beginning after 2021-12-31",
+}
+
+
+def answer_tax_policy(spec, question):
+    """Simulate a change to the DC income tax schedule."""
+    points = spec.get("taxChangePoints")
+    proportional = spec.get("taxChangeProportional")
+    if points is None and proportional is None:
+        return result(spec, question, status="unsupported",
+                      title="No rate change given",
+                      explanation="No size of tax change was stated.",
+                      missingEvidence=["a rate change, in percentage points"])
+    try:
+        from dc_api.tax_sim import run_tax
+        sim = run_tax(points=points, proportional=proportional)
+    except Exception as exc:                                    # noqa: BLE001
+        return result(spec, question, status="unsupported",
+                      title="Tax simulation unavailable",
+                      explanation=str(exc),
+                      missingEvidence=["the DC tax microsimulation"])
+
+    rev = sim["annual_revenue_usd"]
+    cpr = sim["impact"]["child_poverty_rate"]
+    raising = rev["median"] >= 0
+    verb = "raises" if raising else "returns"
+    verb_past = "raised" if raising else "returned"
+    share_paying = sim["households_paying_more"] / sim["households_total"]
+
+    return result(
+        spec, question,
+        title=f"${abs(rev['median']) / 1e9:,.2f}B a year",
+        explanation=(
+            f"Read as: {sim['understood']}. Applied to {sim['n_households']:,} "
+            f"DC household records from the ACS 2024 PUMS, using the published "
+            f"DC schedule and the standard deduction. It {verb} "
+            f"${abs(rev['median']) / 1e9:,.2f} billion a year against a current "
+            f"DC individual income tax base of "
+            f"${sim['baseline_liability_usd'] / 1e9:,.2f} billion. "
+            f"{sim['households_paying_more']:,.0f} households "
+            f"({100 * share_paying:.0f}%) owe more; the rest owe nothing extra "
+            f"because their taxable income is below the standard deduction. "
+            f"Child poverty moves {100 * cpr['change_median']:+.2f} points, "
+            f"because households under the poverty line have little or no "
+            f"taxable income to begin with."),
+        estimate={"kind": "annual_revenue", "value": round(rev["median"], 0),
+                  "unit": "dollars",
+                  "displayValue": f"${abs(rev['median']) / 1e9:,.2f}B a year",
+                  "label": f"DC revenue {verb_past}, statutory"},
+        uncertainty={"level": 0.9, "lower": round(rev["p05"], 0),
+                     "upper": round(rev["p95"], 0),
+                     "displayRange": f"${rev['p05'] / 1e9:,.2f}B to "
+                                     f"${rev['p95'] / 1e9:,.2f}B",
+                     "method": f"Bayesian bootstrap over {sim['n_households']:,} "
+                               f"DC household records, {sim['n_seeds']} draws. "
+                               f"The schedule itself is exact, so this interval "
+                               f"is sampling uncertainty only.",
+                     "limitations": "It does not cover behavioural response, "
+                                    "credits, or itemised deductions."},
+        surveyAnalysis=impact_breakdowns(
+            sim, sim["understood"],
+            share_label="Share paying more",
+            reached="Households owing more", unaffected="Households owing no more",
+            summary_label="Who pays it, by group",
+            share_note="The share paying more is the share of the group whose "
+                       "DC liability rises at all. The dollar figure is the "
+                       "average change in disposable income across the whole "
+                       "group, including those who owe nothing extra."),
+        evidence=[OTR_EVIDENCE] + evidence_for("household_income"),
+        missingEvidence=[
+            "A revenue estimate from the DC Chief Financial Officer, which "
+            "would incorporate behavioural response and administrative data",
+            "Itemised deduction and credit take-up, to net down liability",
+        ],
+        limitations=list(sim["warnings"]) + [
+            "The DC schedule is the published one, retrieved from the Office "
+            "of Tax and Revenue and checked at import: every bracket's base "
+            "amount must equal the tax accumulated below it.",
+        ],
+        validation={"description":
+                    "The rate schedule reproduces every published bracket "
+                    "boundary exactly ($400 at $10,000 through $91,525 at "
+                    "$1,000,000). The distributional machinery is the same "
+                    "code the transfer simulation uses."})
 
 
 def answer_reasoned(spec, question, carried=None):
@@ -703,6 +810,7 @@ HANDLERS = {
     "service_requests": answer_service_requests,
     "health_prevalence": answer_health_prevalence,
     "policy_simulation": answer_policy_simulation,
+    "tax_policy": answer_tax_policy,
 }
 
 
@@ -752,6 +860,12 @@ def catalog() -> Dict[str, Any]:
              "years": [int(y) for y in PLACES["years"]], "geographies": ["tract"],
              "limitations": "Model-based small-area estimates. Already modelled; "
                             "not independent validation data."},
+            {"kind": "tax_policy",
+             "outcome": "Revenue and household impact of a change to the DC "
+                        "income tax rate schedule",
+             "years": [2024], "geographies": ["district"],
+             "limitations": "Statutory calculation. No behavioural response, "
+                            "no credits, no itemised deductions."},
             {"kind": "policy_simulation",
              "outcome": "Simulated effect of a cash transfer on DC households",
              "years": [2024], "geographies": ["district"],

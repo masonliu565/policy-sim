@@ -300,3 +300,119 @@ def test_the_reached_count_is_consistent_with_the_household_type_table():
     sa = r["surveyAnalysis"]
     total = sa["responseCounts"]["reached"] + sa["responseCounts"]["unaffected"]
     assert abs(total - 329_688) < 2, "household types must partition DC"
+
+
+# --- the DC income tax schedule --------------------------------------------
+import sys as _sys                                                   # noqa: E402
+_sys.path.insert(0, str(REPO / "model"))
+import dc_tax as T                                                   # noqa: E402
+
+
+def test_the_schedule_is_internally_consistent():
+    """Each bracket's base must equal the tax accumulated below it. A
+    mistranscribed rate or threshold breaks this identity."""
+    assert T.BRACKETS_ARE_CONSISTENT
+
+
+@pytest.mark.parametrize("taxable,published", [
+    (10_000, 400.0), (40_000, 2_200.0), (60_000, 3_500.0),
+    (250_000, 19_650.0), (500_000, 42_775.0), (1_000_000, 91_525.0),
+])
+def test_liability_reproduces_every_published_bracket_boundary(taxable, published):
+    """The figures on the right are quoted from the DC Office of Tax and
+    Revenue schedule, not derived from this code."""
+    assert abs(float(T.liability([taxable])[0]) - published) < 0.01
+
+
+def test_a_rate_shift_keeps_the_schedule_consistent():
+    sched = T.shift_rates(5.0)
+    for i in range(1, len(sched)):
+        lo_prev, base_prev, rate_prev = sched[i - 1]
+        lo, base, _ = sched[i]
+        assert abs(base_prev + rate_prev * (lo - lo_prev) - base) < 1e-6
+
+
+def test_the_standard_deduction_is_applied_before_tax():
+    """Income under the standard deduction owes nothing, which is why a rate
+    rise does not move poverty."""
+    import numpy as np
+    taxable = T.taxable_income(np.array([14_000.0, 100_000.0]),
+                               ["single_no_kids", "single_no_kids"])
+    assert taxable[0] == 0.0
+    assert float(T.liability(taxable)[0]) == 0.0
+
+
+# --- parsing ----------------------------------------------------------------
+def test_a_rate_change_is_read_as_percentage_points_and_says_so():
+    spec = interpret("what if DC raised income tax by 5%")
+    assert spec["kind"] == "tax_policy"
+    assert spec["taxChangePoints"] == 5.0
+    assert "percentage points" in (spec["clarification"] or "")
+
+
+def test_a_tax_cut_is_negative():
+    assert interpret("what if we cut DC income tax by 2 percentage points"
+                     )["taxChangePoints"] == -2.0
+
+
+def test_a_sales_tax_is_not_answered_with_income_tax_arithmetic():
+    """Only the individual income tax schedule is held. Matching on the bare
+    word "tax" answered a sales tax question with income tax numbers, which is
+    a wrong answer rather than a missing one."""
+    spec = interpret("what if DC raised the sales tax by 2 points")
+    assert spec["kind"] != "tax_policy"
+
+
+# --- the simulation ---------------------------------------------------------
+def _tax(points):
+    from dc_api.tax_sim import run_tax
+    return run_tax(points=points, seeds=80)
+
+
+def test_a_rate_rise_raises_revenue_and_a_cut_loses_it():
+    assert _tax(2.0)["annual_revenue_usd"]["median"] > 0
+    assert _tax(-1.0)["annual_revenue_usd"]["median"] < 0
+
+
+def test_poverty_cannot_fall_when_every_income_falls():
+    """A tax rise weakly lowers every household's income, so the poor set can
+    only grow. The naive change (bootstrapped level minus fixed baseline)
+    reported a DECREASE; the paired change is what makes this hold."""
+    imp = _tax(5.0)["impact"]
+    assert imp["child_poverty_rate"]["change_median"] >= -1e-9
+    assert imp["overall_poverty_rate"]["change_median"] >= -1e-9
+
+
+def test_the_burden_rises_with_income():
+    groups = {g["group"]: g for g in _tax(5.0)["by_group"]
+              if g["group_type"] == "income_quintile"}
+    deltas = [groups[q]["disposable_income_delta"] for q in
+              ("Q1", "Q2", "Q3", "Q4", "Q5")]
+    assert all(a >= b for a, b in zip(deltas, deltas[1:])), \
+        "each higher quintile must lose at least as much as the one below"
+    assert groups["Q1"]["pct_better_off"] < groups["Q5"]["pct_better_off"]
+
+
+def test_the_tax_answer_reports_who_pays_it():
+    r = ask("what if DC raised income tax by 5%")
+    assert r["status"] == "ok"
+    assert r["estimate"]["displayValue"].endswith("a year")
+    sa = r["surveyAnalysis"]
+    assert sa["summaryLabel"] == "Who pays it, by group"
+    for b in sa["breakdowns"]:
+        assert "Share paying more" in b["columns"]
+    assert any("Office of Tax and Revenue" in e["publisher"] for e in r["evidence"])
+
+
+# --- the paired change ------------------------------------------------------
+def test_the_change_interval_is_paired_not_a_difference_of_levels():
+    """The baseline is recomputed under each bootstrap draw. Without that, the
+    interval measures sampling noise in the LEVEL and swamps the policy."""
+    from dc_api.dc_engine import run_dc
+    from app.local_parser import parse
+    sim = run_dc(parse("$400 a month per child under 6 in DC").levers, seeds=200)
+    c = sim["impact"]["child_poverty_rate"]
+    naive = (c["p95"] - c["baseline"]) - (c["p05"] - c["baseline"])
+    paired = c["change_p95"] - c["change_p05"]
+    assert paired < naive, "pairing must remove the common sampling variation"
+    assert c["change_p05"] <= c["change_median"] <= c["change_p95"]

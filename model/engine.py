@@ -222,12 +222,32 @@ def _weighted_median_rows(values, weights):
     return v[np.arange(values.shape[0]), idx]
 
 
-def _band(arr, baseline):
+def _band(arr, baseline, baseline_draws=None):
+    """
+    A level with its interval, and -- when the per-draw baseline is supplied --
+    the CHANGE as a paired difference.
+
+    WHY THE PAIRED CHANGE EXISTS. "baseline" is a fixed design-weighted scalar
+    while "median" is a bootstrapped level, so median - baseline mixes the
+    policy effect with sampling noise in the LEVEL. That noise is large and it
+    is common to both terms, so subtracting per draw cancels it. Without this,
+    a DC income tax rise reported child poverty going DOWN by 0.1 points, which
+    is arithmetically impossible: every household's income weakly falls, so the
+    poor set can only grow. The sign was noise, not an effect.
+
+    Read "change_*" for what a policy does, and the level fields for where it
+    lands.
+    """
     a = np.asarray(arr, dtype=float)
-    return {"baseline": float(baseline),
-            "median": float(np.median(a)),
-            "p05": float(np.percentile(a, 5)),
-            "p95": float(np.percentile(a, 95))}
+    out = {"baseline": float(baseline),
+           "median": float(np.median(a)),
+           "p05": float(np.percentile(a, 5)),
+           "p95": float(np.percentile(a, 95))}
+    d = (a - np.asarray(baseline_draws, dtype=float)) if baseline_draws is not None         else (a - float(baseline))
+    out.update(change_median=float(np.median(d)),
+               change_p05=float(np.percentile(d, 5)),
+               change_p95=float(np.percentile(d, 95)))
+    return out
 
 
 def bootstrap_weights(n_seeds, n_households, seed=DEFAULT_SEED):
@@ -287,24 +307,32 @@ def outcomes_for(pop, transfer, new_income, mask=None, boot=None):
         cw[None, :], y.shape)
 
     cw_tot = cw_s.sum(1)
+    # The baseline is recomputed under each draw's weights as well as the fixed
+    # ones, so the change can be a paired difference. See _band.
     if cw.sum() > 0:
         child_rate = (poor * cw_s).sum(1) / np.where(cw_tot > 0, cw_tot, 1.0)
         child_base = float((base_poor * cw).sum() / cw.sum())
+        child_base_draws = ((base_poor[None, :] * cw_s).sum(1)
+                            / np.where(cw_tot > 0, cw_tot, 1.0))
     else:
         child_rate = np.zeros(y.shape[0])
         child_base = 0.0
+        child_base_draws = np.zeros(y.shape[0])
     all_rate = (poor * pw_s).sum(1) / pw_s.sum(1)
     all_base = float((base_poor * pw).sum() / pw.sum())
+    all_base_draws = (base_poor[None, :] * pw_s).sum(1) / pw_s.sum(1)
 
     med = _weighted_median_rows(y, dw_s if bs is not None else dw)
     med_base = float(_weighted_median_rows(inc[None, :].astype(np.float32), dw)[0])
+    inc_rows = np.broadcast_to(inc[None, :].astype(np.float32), y.shape)
+    med_base_draws = _weighted_median_rows(inc_rows, dw_s if bs is not None else dw)
 
     cost = (t * dw_s).sum(1)
 
     return {
-        "child_poverty_rate": _band(child_rate, child_base),
-        "overall_poverty_rate": _band(all_rate, all_base),
-        "median_disposable_income": _band(med, med_base),
+        "child_poverty_rate": _band(child_rate, child_base, child_base_draws),
+        "overall_poverty_rate": _band(all_rate, all_base, all_base_draws),
+        "median_disposable_income": _band(med, med_base, med_base_draws),
         "annual_cost_usd": _band(cost, 0.0),
     }
 
