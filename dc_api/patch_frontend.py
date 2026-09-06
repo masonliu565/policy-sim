@@ -27,6 +27,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 
+SUBDIR = {"main.ts": "city/src", "index.html": "city"}
+
 EDITS = {
     "types.ts": [
         # An answer may carry its own formatted headline and label.
@@ -55,6 +57,23 @@ EDITS = {
          "'Cost barriers', '95% interval'],\n      rows:"),
     ],
     "chat.ts": [
+        # Nothing should reach this branch -- every answer now carries an
+        # estimate -- but the string itself must not exist in a product
+        # whose contract is that it never tells you it needs more information.
+        ("result.status==='needs_clarification'?'Let’s narrow that down.':'More evidence is needed.'",
+         "result.status==='needs_clarification'?'Let’s narrow that down.':'What the evidence supports'"),
+        ('<span>Ask Juniper</span><span class="launcher-hint">Explore the evidence</span>',
+         '<span>Policy Sim</span><span class="launcher-hint">Ask a policy question</span>'),
+        ('<h2 id="chat-title">Ask Juniper</h2><p>Questions, grounded in DC.</p>',
+         '<h2 id="chat-title">Policy Sim</h2><p>Policy questions, grounded in DC data.</p>'),
+        ('aria-label="Conversation with Juniper"',
+         'aria-label="Policy Sim conversation"'),
+        ('<span class="eyebrow">A CLOSER LOOK AT YOUR CITY</span><h3>Every question<br>starts somewhere.</h3><p>Ask about DC’s households, city services, or health. I’ll bring the evidence into view.</p>',
+         '<span class="eyebrow">POLICY, MEASURED</span><h3>What should<br>we change?</h3><p>Describe a policy for DC and this simulates who it reaches, from ACS microdata, city records, and a pre-registered model.</p>'),
+        ('>Ask a question about Washington, DC<',
+         '>Ask a policy question about Washington, DC<'),
+        ('placeholder="What would you like to know about DC?"',
+         'placeholder="What policy should we simulate? e.g. $400 a month per child under 6"'),
         # The headline formatter rounds anything that is not a percent
         # to a whole number, so a -1.33 point change showed as "-1".
         ("card.append(el('div',number(estimate.value,estimate.unit==='percent'),'chat-estimate'),\n        el('div',estimateLabel(estimate.kind),'chat-estimate-label'));",
@@ -68,7 +87,20 @@ EDITS = {
         ("for(const label of ['Group','Valid responses','Cost barriers','95% interval'])",
          "for(const label of breakdown.columns)"),
     ],
-}
+    "main.ts": [
+        ('aria-label="Juniper, explore the National Mall"',
+         'aria-label="Policy Sim, explore Washington, DC"'),
+        ('juniper<span class="brand-dot">.</span>',
+         'policy sim<span class="brand-dot">.</span>'),
+        ('Ask Juniper brings historical household, service, and health evidence into the map.',
+         'Policy Sim brings household, service, and health evidence into the map, and simulates policy changes against it.'),
+        ('simplified, and styled for Juniper.',
+         'simplified, and styled for this atlas.'),
+    ],
+    "index.html": [
+        ('<title>Juniper — Washington, DC</title>',
+         '<title>Policy Sim — Washington, DC</title>'),
+    ],}
 
 
 def main(root: Path) -> int:
@@ -77,7 +109,7 @@ def main(root: Path) -> int:
         print(f"ERROR: {src} not found. Run dc_api/setup_frontend.sh first.")
         return 1
     for name, edits in EDITS.items():
-        path = src / name
+        path = root / SUBDIR.get(name, "city/src/policy") / name
         text = path.read_text(encoding="utf-8")
         before = text
         for old, new in edits:

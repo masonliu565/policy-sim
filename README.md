@@ -136,6 +136,46 @@ The cache makes the running service offline. What it answers, and from what:
 | Tract health prevalence | CDC PLACES, 40 measures, carrying the publisher's own confidence limits |
 | A described cash transfer | our microsimulation, run on a DC-only population built from the same PUMS |
 
+**It always answers.** A service that replies "more evidence is needed" has
+told the user nothing, and in front of an audience it reads as broken. Every
+question now gets an answer. The architecture that makes that safe:
+
+1. A structured handler runs first. If a count exists, the count wins.
+2. If no handler applies -- or a handler cannot close the question, like an
+   unknown service type or a neighbourhood name where a tract id is needed --
+   `dc_api/reason.py` takes it, carrying forward what the lookup established
+   was missing.
+3. Before the question reaches the model, `dc_api/facts.py` assembles a **fact
+   pack**: DC baselines plus whatever the question touches — a wage threshold,
+   an income cutoff, a service type, a health measure. All counted or computed,
+   none estimated by a language model.
+4. The model reasons over those facts. **It may not state a number that is not
+   in them.**
+
+That last rule is enforced, not requested. Every numeral in the model's answer
+is checked against the fact pack, the user's question, and the run's own
+computed figures — allowing rounded restatements, since "about 330,000
+households" is the same claim as 329,688, but not new digits. A numeral that
+traces to nothing is a fabrication: the answer is regenerated once with the
+offending values named, and if it fabricates again its text is discarded and
+the answer is assembled from the facts by template. The system always answers,
+and an invented statistic never reaches the screen.
+
+Asked *"Is rent control a good idea for DC?"* — a question no count settles —
+it gives the wage dispersion and poverty rates it actually measured, explains
+the mechanism, and writes: *"The standard tradeoff — documented broadly in
+housing economics but not in these FACTS — is that it can reduce landlords'
+incentive to maintain or expand supply."* Mechanism in words, numbers only
+where they were measured.
+
+**Person-level PUMS** (`dc_api/dc_persons.py`) exists for the same reason. The
+microsimulation sums the person file into household totals, which throws away
+what one worker earns — so a minimum-wage question could not be answered with a
+real number. The person rows are now kept, with an implied hourly wage derived
+from wage income, usual hours and *weeks worked*: without the weeks, someone
+who worked three months at 40 hours looks like a quarter-wage worker, which is
+what pushes records below any plausible minimum.
+
 **Who a policy reaches is the answer, not a footnote.** A policy question
 returns one headline number — the change in DC child poverty — and under it a
 table of which household groups the money actually lands on, with the dollar
@@ -164,7 +204,7 @@ transfer reaches none of them.
 written for a health survey: its column header is the literal string `Cost
 barriers` and its sample line reads *"valid yes/no responses"*. Rendering
 subgroup impacts through it unchanged would print a table whose header lies
-about the numbers beneath it. `dc_api/patch_frontend.py` makes five strings
+about the numbers beneath it. `dc_api/patch_frontend.py` makes those strings
 data-driven — the column labels, the sample line, the disclosure summary, and
 the headline and interval formatting — each falling back to the atlas's own
 wording, so every existing health answer still renders identically and the
@@ -197,7 +237,7 @@ recomputation from the cache, and the unanswerable question stays unanswered.
 ### Checks
 
 ```bash
-python -m pytest app/tests dc_api -q   # 94 tests
+python -m pytest app/tests dc_api -q   # 110 tests
 python app/tests/smoke_demo.py      # drives the running app in a browser
 python model/diagnostics.py         # 25 engine invariants + MCMC convergence
 bash model/reproduce.sh             # rebuild every artefact from raw PUMS

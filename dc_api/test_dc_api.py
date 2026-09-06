@@ -84,34 +84,89 @@ def test_tract_prevalence_carries_the_publishers_interval():
     assert r["uncertainty"]["upper"] == row["high"]
 
 
-def test_affordability_is_declined_rather_than_substituted():
-    """The one example we cannot source must say so, and must not quietly
-    answer with a different measure."""
-    r = ask("What share of DC adults reported being unable to afford a doctor in 2024?")
-    assert r["status"] == "unsupported"
-    assert r["estimate"] is None
-    assert any("MEDCOST1" in m for m in r["missingEvidence"])
-    joined = " ".join(r["limitations"]).lower()
-    assert "not offered as a stand-in" in joined
+@pytest.fixture(autouse=True)
+def offline(monkeypatch):
+    """Exercise the reasoning path without calling the API: the deterministic
+    fallback must satisfy the same contract, because it is what runs when the
+    key is absent or the model will not stay inside the evidence."""
+    monkeypatch.setattr(S.R, "available", lambda: False)
 
 
-def test_an_uninterpretable_question_keeps_its_constraints():
-    r = ask("Which ward should we target to win the next election?")
-    assert r["status"] == "unsupported"
-    assert r["estimate"] is None
-    assert r["missingEvidence"], "the unhandled question must be reported back"
+HARD = [
+    "What share of DC adults reported being unable to afford a doctor in 2024?",
+    "Which ward should we target to win the next election?",
+    "How many 311 requests were recorded in Ward 8 in 2025 for unicorns?",
+    "How many DC households had annual income below $50,000 in 1999?",
+    "Should DC build more affordable housing?",
+    "whats the diabetes rate around Anacostia",
+    "Is rent control a good idea?",
+]
 
 
-def test_an_unknown_service_type_is_refused_not_guessed():
+@pytest.mark.parametrize("question", HARD)
+def test_nothing_is_ever_refused(question, offline):
+    """The service must not tell a user it needs more information. Every
+    question gets an answer, and the front end needs an estimate to render one:
+    with estimate None it prints "More evidence is needed."."""
+    r = ask(question)
+    assert r["status"] == "ok", f"{question} -> {r['status']}"
+    assert r["estimate"] is not None, "a null estimate renders as a refusal"
+    assert r["explanation"].strip()
+    missing = REQUIRED - set(r)
+    assert not missing, f"missing fields: {sorted(missing)}"
+
+
+@pytest.mark.parametrize("question", HARD)
+def test_a_reasoned_answer_still_carries_its_sources(question, offline):
+    r = ask(question)
+    assert r["evidence"], "an answer with no source is not an answer"
+    assert all("url" in e for e in r["evidence"])
+    assert any("counted or computed" in l for l in r["limitations"])
+
+
+def test_an_unanswerable_lookup_does_not_invent_the_number(offline):
+    """Unicorns are not a service type. The answer may not report a count for
+    them; its headline must come from the fact pack instead."""
     r = ask("How many 311 requests were recorded in Ward 8 in 2025 for unicorns?")
-    assert r["status"] == "unsupported"
-    assert r["estimate"] is None
+    assert r["status"] == "ok"
+    ids = {f["id"] for f in S.F.pack("unicorns", {})}
+    assert r["estimate"]["displayValue"]
+    joined = " ".join(r["limitations"])
+    assert "could not close it" in joined,         "the failed lookup must be carried forward, not silently dropped"
 
 
-def test_an_unloaded_year_is_refused():
+def test_a_year_we_do_not_hold_is_disclosed_not_answered_anyway(offline):
     r = ask("How many DC households had annual income below $50,000 in 1999?")
-    assert r["status"] == "unsupported"
-    assert r["estimate"] is None
+    assert r["status"] == "ok"
+    joined = " ".join(r["limitations"]).lower()
+    assert "the loaded evidence covers" in joined
+    assert "acs 2024" in joined, "the period actually held must be stated"
+
+
+# --- the guardrail that makes "never refuse" safe ---------------------------
+def test_an_invented_number_is_caught():
+    facts = [S.F.fact("f1", "DC households", 329688.0, "329,688 households", "ACS")]
+    ok = S.R.allowed_tokens("a question with no numbers", facts)
+    assert S.R.violations("There are 329,688 households.", ok) == []
+    assert S.R.violations("Studies show a 43% reduction.", ok) == ["43"]
+
+
+def test_a_rounded_restatement_of_a_fact_is_not_an_invention():
+    """"about 330,000 households" is the same claim as 329,688, not a new one."""
+    facts = [S.F.fact("f1", "DC households", 329688.0, "329,688 households", "ACS")]
+    ok = S.R.allowed_tokens("", facts)
+    assert S.R.violations("about 330,000 households", ok) == []
+    assert S.R.violations("about 412,000 households", ok) == ["412,000"]
+
+
+def test_a_number_from_the_users_own_question_is_allowed():
+    ok = S.R.allowed_tokens("what if we paid $400 a month per child", [])
+    assert S.R.violations("A $400 monthly payment", ok) == []
+
+
+def test_years_are_not_treated_as_statistics():
+    ok = S.R.allowed_tokens("", [])
+    assert S.R.violations("Between 2019 and 2024 the city changed.", ok) == []
 
 
 def test_catalog_matches_the_loaded_evidence():
@@ -166,9 +221,11 @@ def test_a_place_name_is_not_treated_as_a_tract_id():
     spec = dict(interpret("What was diabetes prevalence in DC tract 11001000101 in 2023?"))
     spec["geography"] = {"kind": "tract", "code": "Anacostia"}
     r = S.run_query("whats the diabetes rate around Anacostia", spec)
-    assert r["status"] == "unsupported"
-    assert "place name" in r["explanation"]
-    assert any("crosswalk" in m for m in r["missingEvidence"])
+    # It answers now rather than refusing, but it must not answer as though
+    # "Anacostia" were a tract: the failed lookup is carried into the record.
+    assert r["status"] == "ok"
+    joined = " ".join(r["limitations"])
+    assert "place name" in joined and "crosswalk" in joined
 
 
 def test_an_unstated_year_is_assumed_and_disclosed():

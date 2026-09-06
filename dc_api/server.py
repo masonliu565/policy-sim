@@ -1,7 +1,8 @@
 """
-Evidence service for the Juniper DC atlas front end.
+Evidence service for the DC atlas front end.
 
-The front end is used ENTIRELY UNCHANGED. It expects a local service on
+The front end is used almost unchanged -- see dc_api/patch_frontend.py for the
+one patch and why it exists. It expects a local service on
 /api/v1 with four endpoints and a specific answer shape; this implements that
 shape over our own evidence, and serves the atlas's built files from the same
 origin so the app is one process.
@@ -28,10 +29,11 @@ WHAT IT ANSWERS, and from what:
                        confidence limits.
     policy_simulation  our microsimulation, run on DC households.
 
-    health_affordability is NOT answered. BRFSS MEDCOST1 is not published for
-    DC 2024 in any public aggregate that was reachable, so that request returns
-    missingEvidence naming what is absent and the nearest measure that exists,
-    rather than substituting something else. The front end renders that state.
+    Anything else is answered by the reasoning layer (dc_api/reason.py), which
+    argues from a pack of measured facts and is forbidden from stating a number
+    that is not in it. The service never returns "more evidence is needed": a
+    question the data cannot close still gets an answer that says what is
+    established, what follows, and what would change it.
 """
 from __future__ import annotations
 
@@ -54,6 +56,8 @@ sys.path.insert(0, str(REPO))
 
 from dc_api.interpret import interpret as interpret_local  # noqa: E402
 from dc_api import interpret_claude  # noqa: E402
+from dc_api import facts as F  # noqa: E402
+from dc_api import reason as R  # noqa: E402
 
 
 def interpret(question: str):
@@ -117,6 +121,13 @@ def evidence_for(kind: str) -> List[Dict[str, str]]:
              "url": s["url"], "referencePeriod": s["referencePeriod"]}]
 
 
+def _district_code(geo):
+    geo = dict(geo or {"kind": "district", "code": "11"})
+    if geo.get("kind") == "district" and not geo.get("code"):
+        geo["code"] = "11"
+    return geo
+
+
 def result(spec: Dict[str, Any], question: str, **kw) -> Dict[str, Any]:
     """A PolicyResult with every field the front end reads."""
     rid = str(uuid.uuid4())
@@ -125,7 +136,10 @@ def result(spec: Dict[str, Any], question: str, **kw) -> Dict[str, Any]:
         "status": kw.get("status", "ok"), "title": kw.get("title", ""),
         "explanation": kw.get("explanation", ""),
         "population": spec.get("population", ""),
-        "geography": spec.get("geography", {"kind": "district", "code": "11"}),
+        # The map resolves the District only on code "11"; a null code makes
+        # the "Show on map" button read "Boundary unavailable", which looks
+        # like a failure when the answer is District-wide and perfectly fine.
+        "geography": _district_code(spec.get("geography")),
         "timeframe": spec.get("timeframe", ""),
         "estimate": kw.get("estimate"), "uncertainty": kw.get("uncertainty"),
         "evidence": kw.get("evidence", evidence_for(spec.get("kind", ""))),
@@ -144,7 +158,11 @@ def result(spec: Dict[str, Any], question: str, **kw) -> Dict[str, Any]:
 
 STOPWORDS = {"complaint", "complaints", "request", "requests", "issue", "issues",
              "problem", "problems", "service", "report", "reports", "about",
-             "related", "and", "or", "the", "for", "in", "of"}
+             "related", "and", "or", "the", "for", "in", "of",
+             # verb forms of the same filler: "which ward complains most about
+             # rats" was matching "Pet Waste Complaint" on "complains".
+             "complain", "complains", "complained", "complaining", "reporting",
+             "requesting", "asking", "asks", "filed", "files", "filing"}
 
 
 def match_services(service: str, pool: Dict[str, int]) -> Dict[str, int]:
@@ -577,35 +595,107 @@ def answer_policy_simulation(spec, question):
                                    "than tuned away. See docs/backtest.md."})
 
 
-def answer_unsupported(spec, question):
-    kind = spec.get("kind")
-    if kind == "health_affordability":
-        return result(
-            spec, question, status="unsupported",
-            title="Not in the loaded evidence",
-            explanation=(
-                "BRFSS MEDCOST1 — whether an adult could not see a doctor "
-                "because of cost — is not published for DC 2024 in any public "
-                "aggregate this service could reach. Rather than substitute a "
-                "different measure, it is left unanswered."),
-            missingEvidence=[
-                "BRFSS 2024 MEDCOST1 responses for the District of Columbia",
-                "A survey-design interval and age, income and insurance "
-                "breakdowns for that measure",
-            ],
-            limitations=[
-                "The nearest loaded measure is CDC PLACES ACCESS2, the share of "
-                "adults aged 18-64 without health insurance, by census tract. "
-                "That is a different question and is not offered as a stand-in.",
-            ])
+# --- the answer of last resort ---------------------------------------------
+def coverage_sentence() -> str:
+    """What periods the loaded evidence actually spans, stated on every
+    reasoned answer so a question about 1999 is never quietly answered with
+    2024 numbers."""
+    yrs = sorted(SR)
+    return (f"ACS {INCOME['year']} 1-Year PUMS for households and people, "
+            f"311 service requests {yrs[0]}-{yrs[-1]}, and CDC PLACES "
+            f"{', '.join(sorted(PLACES['years']))}")
+
+
+def fact_source_kinds(source: str) -> List[str]:
+    """Map a fact's source string onto the manifest entries it came from, so a
+    reasoned answer cites the same datasets a counted one would."""
+    out = []
+    if F.ACS in source or F.SIM in source:
+        out.append("household_income")
+    if F.SR_SRC in source:
+        out.append("service_requests")
+    if F.PLACES_SRC in source:
+        out.append("health_prevalence")
+    return out
+
+
+def answer_reasoned(spec, question, carried=None):
+    """Answer a question no query can close, without ever refusing it.
+
+    The fact pack is assembled first, so the reasoning model argues from
+    measured quantities rather than from nothing. Every numeral it writes is
+    checked back against that pack; see dc_api/reason.py. If it will not stay
+    inside the evidence, its text is dropped and the answer is built from the
+    facts alone -- which still answers, just more plainly.
+    """
+    pack = F.pack(question, spec)
+    notes = []
+    got = None
+    if R.available():
+        got, notes = R.reason(question, spec, pack)
+    else:
+        notes.append("No reasoning model is configured, so this answer is "
+                     "assembled from the measured evidence alone. Set "
+                     "ANTHROPIC_API_KEY to enable the reasoning layer.")
+    reasoned_by_model = got is not None
+    if got is None:
+        got = R.fallback(question, pack)
+
+    by_id = {f["id"]: f for f in pack}
+    lead = next((by_id[i] for i in got.get("usedFactIds", []) if i in by_id),
+                pack[0] if pack else None)
+
+    body = " ".join(x for x in (got.get("answer"), got.get("mechanism"),
+                                got.get("affected")) if x).strip()
+    used = [by_id[i] for i in got.get("usedFactIds", []) if i in by_id] or pack[:4]
+    seen, ev = set(), []
+    for f in used:
+        for kind in fact_source_kinds(f["source"]):
+            if kind in seen:
+                continue
+            seen.add(kind)
+            ev += evidence_for(kind)
+
+    limits = []
+    if got.get("measured"):
+        limits.append("Measured, not inferred: " + "; ".join(got["measured"]) + ".")
+    if got.get("reasoned"):
+        limits.append("Reasoning rather than measurement: "
+                      + "; ".join(got["reasoned"]) + ".")
+    limits += notes
+    limits.append("The loaded evidence covers " + coverage_sentence() + ". A "
+                  "question about another period or place is answered from "
+                  "these, and that substitution is not silent.")
+    limits.append("Every figure above is counted or computed from the loaded "
+                  "evidence. The reasoning model may not state a number that is "
+                  "not in it, and any answer that does is regenerated or "
+                  "discarded.")
+    if carried:
+        limits += carried
+
+    est = None
+    if lead is not None:
+        est = {"kind": "supporting_fact", "value": lead["value"]
+               if isinstance(lead["value"], (int, float)) else 0,
+               "unit": "count", "displayValue": lead["display"],
+               "label": lead["label"]}
+
     return result(
-        spec, question, status="unsupported",
-        title="Not interpreted",
-        explanation=spec.get("clarification") or
-        "This question was not recognised, and nothing in it has been ignored.",
-        missingEvidence=spec.get("unsupportedConstraints", []),
-        limitations=["Supported questions are listed in the catalog and in the "
-                     "examples above the chat box."])
+        spec, question,
+        status="ok",
+        title=got.get("headline") or "What the evidence shows",
+        explanation=body or got.get("answer", ""),
+        estimate=est,
+        evidence=ev,
+        missingEvidence=got.get("wouldChange", []),
+        limitations=limits,
+        validation={"description":
+                    "Reasoning grounded in the loaded evidence. The measured "
+                    "quantities are counts and model output; the argument "
+                    "connecting them is generated and labelled as such."
+                    if reasoned_by_model else
+                    "Assembled from the measured evidence without a reasoning "
+                    "model."})
 
 
 HANDLERS = {
@@ -617,7 +707,27 @@ HANDLERS = {
 
 
 def run_query(question: str, spec: Dict[str, Any]) -> Dict[str, Any]:
-    return HANDLERS.get(spec.get("kind"), answer_unsupported)(spec, question)
+    """Answer every question.
+
+    A structured handler runs first, because a counted answer beats a reasoned
+    one whenever the count exists. If no handler applies, or the handler cannot
+    close the question -- an unknown service type, a year we do not hold, a
+    neighbourhood name where a tract id is needed -- the reasoning layer takes
+    it instead, carrying forward what the handler established was missing. The
+    service does not return "more evidence is needed" to a user.
+    """
+    handler = HANDLERS.get(spec.get("kind"))
+    if handler is None:
+        return answer_reasoned(spec, question)
+    out = handler(spec, question)
+    if out.get("status") == "ok":
+        return out
+    carried = []
+    if out.get("explanation"):
+        carried.append("A direct lookup was tried first and could not close it: "
+                       + out["explanation"])
+    carried += out.get("missingEvidence", []) + out.get("limitations", [])
+    return answer_reasoned(spec, question, carried=carried)
 
 
 def catalog() -> Dict[str, Any]:
