@@ -19,8 +19,9 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app import charts
+from app.parser import ParseError, ParseResult, parse_policy
 from app.scenarios import ScenarioError, list_scenarios, load_scenario
-from app.theme import palette
+from app.theme import FONT_MONO, palette
 
 st.set_page_config(page_title="policy-sim", layout="wide", initial_sidebar_state="expanded")
 
@@ -45,6 +46,12 @@ def inject_css(mode: str) -> None:
           }}
           .ps-metric {{ font-size: 1.55rem; font-weight: 650; color: {pal['ink']}; }}
           .ps-delta  {{ font-size: 1.05rem; color: {pal['ink_soft']}; }}
+          .ps-readback {{
+            background: {pal['panel']}; border: 3px solid {pal['accent']};
+            border-radius: 12px; padding: 1.2rem 1.4rem; margin: 1rem 0 0.6rem 0;
+          }}
+          .ps-readback h3 {{ margin: 0 0 .2rem 0; font-size: 1.45rem; }}
+          .ps-lever {{ font-family: {FONT_MONO}; font-size: 1.05rem; }}
           .ps-caveat {{
             background: {pal['warn_bg']}; border-left: 5px solid {pal['warn_edge']};
             padding: 0.7rem 1rem; margin: 0.35rem 0; border-radius: 4px;
@@ -88,18 +95,123 @@ def sidebar() -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Section 1 — policy input
+# Section 1 — policy input, and the read-back panel
 # ---------------------------------------------------------------------------
+LEVER_LABELS = {
+    "credit_per_child_under_6": "Credit per child under 6 ($/yr)",
+    "credit_per_child_6_to_17": "Credit per child 6–17 ($/yr)",
+    "fully_refundable": "Fully refundable",
+    "phaseout_start_single": "Phaseout starts, single ($)",
+    "phaseout_start_joint": "Phaseout starts, joint ($)",
+    "phaseout_rate": "Phaseout rate (fraction)",
+    "flat_transfer_per_adult": "Flat transfer per adult ($/yr)",
+}
+
+
 def section_policy_input() -> None:
     st.header("1 · Policy")
-    st.text_area(
-        "Describe a policy in plain English",
-        placeholder="e.g. give every family $300 a month per kid, phase it out over $150k",
-        height=110,
-        key="policy_text",
+
+    col_text, col_go = st.columns([5, 1], gap="medium", vertical_alignment="bottom")
+    with col_text:
+        text = st.text_area(
+            "Describe a policy in plain English",
+            placeholder="e.g. give every family $300 a month per kid, phase it out over $150k",
+            height=110,
+            key="policy_text",
+        )
+    with col_go:
+        run = st.button("Read it", type="primary", key="run_policy", width="stretch")
+
+    if run:
+        with st.spinner("Reading the policy…"):
+            st.session_state["parse_outcome"] = parse_policy(text)
+
+    outcome = st.session_state.get("parse_outcome")
+    if outcome is None:
+        st.caption(
+            "The scenarios in the sidebar are precomputed and need no network call. "
+            "Parsing free text calls the model to translate it into levers — it never "
+            "produces a number you see on this page."
+        )
+        return
+
+    if isinstance(outcome, ParseError):
+        _render_parse_error(outcome)
+    else:
+        _render_readback(outcome)
+
+
+def _render_parse_error(err: ParseError) -> None:
+    st.markdown(
+        f"<div class='ps-readback' style='border-color:#A6453B'>"
+        f"<h3>Could not read that as a policy</h3>"
+        f"<div style='font-size:1.1rem'>{err.message}</div>"
+        + (f"<div class='ps-delta' style='margin-top:.5rem'>{err.detail}</div>" if err.detail else "")
+        + "<div class='ps-delta' style='margin-top:.6rem'>Nothing was simulated. "
+          "Pick a precomputed scenario from the sidebar.</div></div>",
+        unsafe_allow_html=True,
     )
-    st.button("Run", type="primary", key="run_policy")
-    st.caption("Parsing is wired in at B2. The scenarios in the sidebar are precomputed.")
+
+
+def _render_readback(result: ParseResult) -> None:
+    """The panel that makes this an instrument rather than a black box.
+
+    Deliberately not an expander: the whole point is that the reading is
+    visible without the user going looking for it.
+    """
+    spec = result.spec
+    st.markdown(
+        f"<div class='ps-readback'><h3>Here's how I read your policy</h3>"
+        f"<div class='ps-delta'>{spec.label} · <code>{spec.instrument}</code></div></div>",
+        unsafe_allow_html=True,
+    )
+
+    st.caption("Every field is editable. If the reading is wrong, correct it here.")
+    levers = spec.levers.model_dump()
+    edited: dict = {}
+
+    cols = st.columns(3, gap="medium")
+    for i, (name, value) in enumerate(levers.items()):
+        label = LEVER_LABELS.get(name, name)
+        with cols[i % 3]:
+            if isinstance(value, bool):
+                edited[name] = st.checkbox(label, value=value, key=f"lv_{name}")
+            elif name == "phaseout_rate":
+                edited[name] = st.number_input(
+                    label, value=float(value), min_value=0.0, max_value=1.0,
+                    step=0.01, format="%.3f", key=f"lv_{name}",
+                )
+            else:
+                edited[name] = st.number_input(
+                    label, value=None if value is None else float(value),
+                    min_value=0.0, step=100.0, format="%.0f", key=f"lv_{name}",
+                    placeholder="not set",
+                )
+
+    _render_uncertainties(spec.parser_uncertainties)
+
+    st.markdown(
+        "<div class='ps-caveat'><b>These levers are not yet simulated.</b> "
+        "The figures below come from the precomputed scenario selected in the "
+        "sidebar, not from this reading. Wiring the live engine is Track A's A7 "
+        "step.</div>",
+        unsafe_allow_html=True,
+    )
+    st.session_state["edited_levers"] = edited
+
+
+def _render_uncertainties(items: list) -> None:
+    st.markdown("#### What I had to guess")
+    if not items:
+        st.markdown(
+            "<div class='ps-caveat'>The parser reported no inferred fields — it "
+            "claims your text stated everything explicitly. Worth checking against "
+            "the levers above.</div>",
+            unsafe_allow_html=True,
+        )
+        return
+    for item in items:
+        st.markdown(f"<div class='ps-caveat'>{item}</div>", unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------
