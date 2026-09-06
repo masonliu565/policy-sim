@@ -1,0 +1,16 @@
+[
+  {
+    "evidence_id": "ev_001",
+    "policy_name": "Expanded Child Tax Credit (2021)",
+    "jurisdiction": "United States",
+    "year": 2021,
+    "subgroup_type": "income_quintile",
+    "subgroup": "Q1",
+    "support_pct": 0.74,
+    "sample_size": 412,
+    "estimate_type": "observed_survey",
+    "source": "PLACEHOLDER",
+    "url": "",
+    "holdout": false
+  }
+]

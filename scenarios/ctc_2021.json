@@ -1,0 +1,28 @@
+{
+  "policy_id": "ctc_2021",
+  "label": "Expanded Child Tax Credit (2021)",
+  "n_seeds": 500,
+  "impact": {
+    "child_poverty_rate":       {"baseline": 0.142, "median": 0.084, "p05": 0.071, "p95": 0.098},
+    "overall_poverty_rate":     {"baseline": 0.128, "median": 0.101, "p05": 0.093, "p95": 0.110},
+    "median_disposable_income": {"baseline": 74000, "median": 75900, "p05": 75200, "p95": 76700},
+    "annual_cost_usd":          {"baseline": 0, "median": 105000000000, "p05": 98000000000, "p95": 112000000000}
+  },
+  "opinion": {
+    "overall_support": {"median": 0.58, "p05": 0.51, "p95": 0.65},
+    "by_group": [
+      {"group_type": "income_quintile", "group": "Q1", "households_weighted": 26000000,
+       "disposable_income_delta": 3140, "pct_better_off": 0.91,
+       "support": {"median": 0.74, "p05": 0.66, "p95": 0.81},
+       "evidence_ids": ["ev_001"]},
+      {"group_type": "census_region", "group": "South", "households_weighted": 48000000,
+       "disposable_income_delta": 1820, "pct_better_off": 0.44,
+       "support": {"median": 0.55, "p05": 0.47, "p95": 0.63},
+       "evidence_ids": ["ev_001"]}
+    ]
+  },
+  "warnings": [
+    "Support estimates poststratify national survey crosstabs onto population cells; no fitted hierarchical model.",
+    "No cost-of-living adjustment across metros; federal poverty thresholds applied uniformly."
+  ]
+}

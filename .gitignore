@@ -1,0 +1,24 @@
+# Raw downloaded data — large, regenerable from A1's download script.
+/data/raw/
+
+# Bulk CSV is never committed...
+*.csv
+
+# ...but the hand-curated evidence file is source, not data. Keep it tracked.
+!/data/evidence.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Notebooks / editors
+.ipynb_checkpoints/
+.idea/
+.vscode/
+
+# OS
+Thumbs.db
+.DS_Store
