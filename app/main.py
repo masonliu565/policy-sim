@@ -11,6 +11,7 @@ estimate. Every figure carries its p05-p95 band.
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -20,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app import charts
 from app.parser import ParseError, ParseResult, parse_policy
+from app.report import ReportError, ReportResult, generate_report
 from app.scenarios import ScenarioError, list_scenarios, load_scenario
 from app.theme import FONT_MONO, palette
 
@@ -52,6 +54,14 @@ def inject_css(mode: str) -> None:
           }}
           .ps-readback h3 {{ margin: 0 0 .2rem 0; font-size: 1.45rem; }}
           .ps-lever {{ font-family: {FONT_MONO}; font-size: 1.05rem; }}
+          .ps-verify-ok {{
+            background: {pal['panel']}; border-left: 6px solid {pal['terrain']};
+            padding: .9rem 1.1rem; border-radius: 6px; font-size: 1.1rem;
+          }}
+          .ps-verify-bad {{
+            background: {pal['warn_bg']}; border-left: 6px solid {pal['baseline']};
+            padding: .9rem 1.1rem; border-radius: 6px; font-size: 1.05rem;
+          }}
           .ps-caveat {{
             background: {pal['warn_bg']}; border-left: 5px solid {pal['warn_edge']};
             padding: 0.7rem 1rem; margin: 0.35rem 0; border-radius: 4px;
@@ -391,6 +401,82 @@ def section_limitations(scenario: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Section 5 — memo, and the numeric verification of it
+# ---------------------------------------------------------------------------
+def section_report(scenario: dict) -> None:
+    st.header("5 · Policy memo")
+    st.caption(
+        "The model writes the prose. It is given the scenario JSON and the "
+        "evidence records, and forbidden from producing any number that is not "
+        "already in them. The panel below checks that mechanically, afterwards."
+    )
+
+    if st.button("Write the memo", key="run_report"):
+        clean = {k: v for k, v in scenario.items() if not k.startswith("_")}
+        with st.spinner("Writing…"):
+            st.session_state["report_outcome"] = generate_report(clean, load_evidence())
+
+    outcome = st.session_state.get("report_outcome")
+    if outcome is None:
+        return
+
+    if isinstance(outcome, ReportError):
+        st.markdown(
+            f"<div class='ps-caveat'><b>{outcome.message}</b>"
+            + (f"<br>{outcome.detail}" if outcome.detail else "")
+            + "</div>",
+            unsafe_allow_html=True,
+        )
+        return
+
+    _render_verification(outcome.verification)
+    st.markdown("---")
+    st.markdown(outcome.text)
+
+
+def _render_verification(v) -> None:
+    """Always rendered. "0 unverified numbers" is the result worth showing."""
+    st.subheader("Numeric verification")
+
+    if v.ok:
+        st.markdown(
+            f"<div class='ps-verify-ok'><b>{v.checked} numeric tokens checked · "
+            f"0 unverified.</b><br>Every number in the memo below appears in the "
+            f"scenario JSON or the evidence records it was given. Every cited "
+            f"evidence_id exists.</div>",
+            unsafe_allow_html=True,
+        )
+        return
+
+    st.markdown(
+        f"<div class='ps-verify-bad'><b>{v.checked} numeric tokens checked · "
+        f"{v.unverified_count} unverified.</b><br>These appear in the memo but "
+        f"not in the input. Treat them as unsourced.</div>",
+        unsafe_allow_html=True,
+    )
+    for f in v.findings:
+        st.markdown(
+            f"<div class='ps-caveat'><code>{f.token}</code> — {f.context}</div>",
+            unsafe_allow_html=True,
+        )
+    for eid in v.missing_evidence_ids:
+        st.markdown(
+            f"<div class='ps-caveat'><b>Unknown evidence_id cited:</b> "
+            f"<code>{eid}</code></div>",
+            unsafe_allow_html=True,
+        )
+
+
+@st.cache_data(show_spinner=False)
+def load_evidence() -> list:
+    path = Path(__file__).resolve().parent.parent / "data" / "evidence.json"
+    try:
+        return json.loads(path.read_text())
+    except Exception:  # noqa: BLE001 — a missing evidence file must not kill the app
+        return []
+
+
+# ---------------------------------------------------------------------------
 def main() -> None:
     state = sidebar()
     inject_css(state["mode"])
@@ -415,6 +501,8 @@ def main() -> None:
     section_opinion(scenario, state["mode"])
     st.divider()
     section_limitations(scenario)
+    st.divider()
+    section_report(scenario)
 
 
 main()
