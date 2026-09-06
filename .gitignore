@@ -37,3 +37,7 @@ Thumbs.db
 # deliverables; the three named screenshots below are kept as evidence.
 docs/screenshots/sec_*.png
 docs/screenshots/body_*.txt
+
+# Vendored upstream atlas (kp224/simcity), built. 109MB of bundled DC map
+# assets; cloned and built by dc_api/setup_frontend.sh rather than committed.
+/frontend/

@@ -1,0 +1,26 @@
+{
+  "builtAt": "2026-09-06T12:09:07Z",
+  "sources": [
+    {
+      "datasetId": "dc-311-service-requests",
+      "publisher": "DC GIS / Office of the Chief Technology Officer",
+      "url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/ServiceRequests/MapServer",
+      "referencePeriod": "2023-2025",
+      "note": "Counted server-side by ward and service type."
+    },
+    {
+      "datasetId": "cdc-places-dc-tracts",
+      "publisher": "Centers for Disease Control and Prevention, PLACES",
+      "url": "https://data.cdc.gov/resource/cwsq-ngmh",
+      "referencePeriod": "2022, 2023",
+      "note": "Model-based small-area estimates with publisher confidence limits."
+    },
+    {
+      "datasetId": "acs-2024-pums-dc-households",
+      "publisher": "U.S. Census Bureau",
+      "url": "https://www2.census.gov/programs-surveys/acs/data/pums/2024/1-Year/",
+      "referencePeriod": "2024",
+      "note": "Occupied DC households, ADJINC-adjusted, household weights."
+    }
+  ]
+}

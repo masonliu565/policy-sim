@@ -112,10 +112,50 @@ not coordinates typed from memory. Regenerate with:
 python model/build_us_outline.py
 ```
 
+### The DC atlas front end
+
+There is a second way to run this. [kp224/simcity](https://github.com/kp224/simcity)
+is an illustrated 3D atlas of Washington DC with an "Ask Juniper" chat that
+expects a local evidence service on `/api/v1`. `dc_api/` implements that
+service over our evidence, so the atlas runs **entirely unchanged** — not one
+line of its source is edited, and it is cloned rather than vendored.
+
+```bash
+bash dc_api/setup_frontend.sh     # clone + build the atlas (unchanged)
+python dc_api/build_cache.py      # fetch the DC evidence, once
+python dc_api/server.py           # atlas + /api/v1 on http://127.0.0.1:4318
+```
+
+The cache makes the running service offline. What it answers, and from what:
+
+| Question | Source |
+|---|---|
+| 311 requests by ward and service type | DC GIS service-request layers, counted server-side. 2023–2025. |
+| DC households under an income threshold | ACS 2024 1-Year PUMS, 3,083 occupied DC household records, ADJINC-adjusted, counted exactly at the threshold |
+| Tract health prevalence | CDC PLACES, 40 measures, carrying the publisher's own confidence limits |
+| A described cash transfer | our microsimulation, run on a DC-only population built from the same PUMS |
+
+**One example question is refused.** BRFSS MEDCOST1 — could an adult not see a
+doctor because of cost — is not published for DC 2024 in any public aggregate
+that was reachable. That question returns `missingEvidence` naming what is
+absent, and names CDC PLACES ACCESS2 as the nearest measure while explicitly
+declining to substitute it. The atlas renders that state properly.
+
+The DC simulation uses its own population on purpose. The national 30,000
+household sample is drawn proportionally, so it carries only a handful of DC
+records; answering a DC question from those would be a made-up number with a
+real interval printed beside it. `dc_api/dc_engine.py` rebuilds a DC population
+from the same ACS files, with the same filters and weights, and hands it to the
+unchanged engine.
+
+`python -m pytest dc_api -q` checks the contract: every answer carries the exact
+fields the atlas's `PolicyResult` type reads, every headline number equals a
+recomputation from the cache, and the unanswerable question stays unanswered.
+
 ### Checks
 
 ```bash
-python -m pytest app/tests -q       # 64 tests
+python -m pytest app/tests dc_api -q   # 83 tests
 python app/tests/smoke_demo.py      # drives the running app in a browser
 python model/diagnostics.py         # 25 engine invariants + MCMC convergence
 bash model/reproduce.sh             # rebuild every artefact from raw PUMS
