@@ -410,10 +410,26 @@ def check_in_support(policy_spec, registry_path=REGISTRY_PATH,
 # ---------------------------------------------------------------------------
 # attach to an engine result
 # ---------------------------------------------------------------------------
-def attach(result, df, n_draws=None, seed=20260905):
+# Poststratification method used by attach(). "mrp" is the hierarchical model
+# in mrp.py; "ladder" is the original most-specific-level fallback. MRP is the
+# default because it beat the ladder on the held-out October 2021 poll: mean
+# absolute gap 3.36 -> 2.06 points, interval coverage 2/8 -> 4/8, closer on 6 of
+# 8 subgroups. See docs/backtest.md for the caveat on that comparison.
+METHOD = "mrp"
+
+
+def attach(result, df, n_draws=None, seed=20260905, method=None):
     """Fill result["opinion"], result["in_support"], result["nearest_policies"]."""
     n_draws = n_draws or result.get("n_seeds", 500)
-    overall, overall_ids, by_group, warns = poststratify(df, n_draws=n_draws, seed=seed)
+    method = method or METHOD
+    if method == "mrp":
+        import mrp as M
+        overall, overall_ids, by_group, warns = M.poststratify(
+            df, n_draws=n_draws, seed=seed)
+    else:
+        overall, overall_ids, by_group, warns = poststratify(
+            df, n_draws=n_draws, seed=seed)
+    warns = [f"Poststratification method: {method}."] + list(warns)
 
     in_support, nearest = check_in_support(result.get("policy_spec", {}))
     result["in_support"] = in_support

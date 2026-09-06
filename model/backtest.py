@@ -129,7 +129,8 @@ def sensitivity(pop, base_rate):
     return rows
 
 
-def backtest_impact(pop):
+def backtest_impact(pop, param_set="preregistered", headline=True):
+    P.use_param_set(param_set)
     draws = E.draw_params(N_SEEDS)
     change, base, rate = child_poverty_change_per_seed(pop, draws)
     obs = observed_spm_child_change()
@@ -142,8 +143,12 @@ def backtest_impact(pop):
     inside = pred["p05"] <= obs["observed_change"] <= pred["p95"]
 
     print("=" * 96)
-    print("BACKTEST 1 -- material impact: change in child poverty rate")
+    label = ("PRE-REGISTERED PARAMETERS (headline result)" if param_set == "preregistered"
+             else "LITERATURE-SOURCED PARAMETERS (post-hoc, see caveat below)")
+    print(f"BACKTEST 1 -- change in child poverty rate  |  {label}")
     print("=" * 96)
+    print("  parameters: " + "; ".join(
+        f"{k}={v[0]} [{v[1]}, {v[2]}]" for k, v in P.UNCERTAIN_PARAMS.items()))
     print(f"  modelled baseline child poverty rate : {100 * base:.2f}%  "
           f"(OPM-style, household income vs Census thresholds)")
     print(f"  modelled post-policy rate (median)   : "
@@ -179,17 +184,31 @@ def backtest_impact(pop):
               f"{r['swing_pts']:>9.2f}p")
     print(f"    -> most sensitive to: {sens[0]['parameter']}")
 
-    return {"predicted": pred, "observed": obs, "observed_inside_interval": inside,
+    return {"param_set": param_set, "parameters":
+            {k: list(v) for k, v in P.UNCERTAIN_PARAMS.items()},
+            "predicted": pred, "observed": obs,
+            "observed_inside_interval": inside,
             "sensitivity": sens, "tuned": False}
 
 
 # ---------------------------------------------------------------------------
 # backtest 2
 # ---------------------------------------------------------------------------
-def backtest_opinion(df):
-    """Predict held-out subgroups from non-holdout evidence only."""
-    overall, _ids, by_group, warns = O.poststratify(df, n_draws=N_SEEDS,
-                                                    include_holdout=False)
+def backtest_opinion(df, method="ladder", quiet=False):
+    """
+    Predict held-out subgroups from non-holdout evidence only.
+
+    method="ladder" -> the A5 fallback-ladder poststratification
+    method="mrp"    -> the hierarchical model in mrp.py
+    Both are run against the SAME holdout so the comparison is like-for-like.
+    """
+    if method == "mrp":
+        import mrp as M
+        overall, _ids, by_group, warns = M.poststratify(df, n_draws=N_SEEDS,
+                                                        include_holdout=False)
+    else:
+        overall, _ids, by_group, warns = O.poststratify(df, n_draws=N_SEEDS,
+                                                        include_holdout=False)
     pred_lookup = {}
     if overall is not None:
         pred_lookup[("national", "national")] = overall
@@ -214,9 +233,19 @@ def backtest_opinion(df):
                    else bool(pred["p05"] <= obs <= pred["p95"]))}
         rows.append(row)
 
+    if quiet:
+        gaps_q = [abs(r["gap"]) for r in rows if r["gap"] is not None]
+        hits_q = sum(1 for r in rows if r["observed_inside_interval"])
+        scored_q = sum(1 for r in rows if r["predicted"] is not None)
+        return {"rows": rows,
+                "mean_absolute_gap": float(np.mean(gaps_q)) if gaps_q else float("nan"),
+                "interval_coverage": f"{hits_q}/{scored_q}",
+                "hits": hits_q, "scored": scored_q, "method": method,
+                "warnings": warns}
     print()
     print("=" * 96)
-    print("BACKTEST 2 -- opinion: held-out Morning Consult #2110009 (Oct 2021)")
+    print(f"BACKTEST 2 -- opinion: held-out Morning Consult #2110009 (Oct 2021)"
+          f"   [method: {method}]")
     print("=" * 96)
     print(f"  {'subgroup':<28}{'predicted [p05, p95]':<32}{'observed':>10}"
           f"{'gap':>9}{'obs n':>8}  hit")
@@ -243,15 +272,32 @@ def backtest_opinion(df):
     print(f"  interval coverage : {hits}/{scored} observed values inside the "
           f"predicted interval")
     print()
-    print("  Interpretation, written before the numbers were seen (docs/backtest.md):")
-    print("  the region crosstabs never enter the model -- every population cell")
-    print("  resolves at the income_band level -- so regional predictions are")
-    print("  population composition, not measured regional opinion. Flat regional")
-    print("  predictions against varying observed values are the expected")
-    print("  consequence of that, not a surprise.")
+    if method == "ladder":
+        print("  Interpretation, written before the numbers were seen "
+              "(docs/backtest.md):")
+        print("  the region crosstabs never enter the ladder -- every population")
+        print("  cell resolves at the income_band level -- so regional predictions")
+        print("  are population composition, not measured regional opinion. Flat")
+        print("  regional predictions against varying observed values are the")
+        print("  expected consequence of that, not a surprise.")
+    else:
+        print("  MRP uses every dimension simultaneously, so regional predictions")
+        print("  now vary. The residual bias is one-directional and is the part")
+        print("  MRP cannot fix: every training record was fielded in July 2021,")
+        print("  so no time effect is identified, and support genuinely fell by")
+        print("  October. The model is answering a question about July.")
+        print()
+        print("  CAVEAT ON THIS NUMBER: MRP was built AFTER seeing the ladder's")
+        print("  performance on this same holdout. The design decisions came from")
+        print("  structural defects visible without the holdout (thin records")
+        print("  discarded, region evidence unused, house effects unmodelled), but")
+        print("  a second look at the same test set is a second look. Treat 2.06p")
+        print("  as indicative, not as a clean out-of-sample result, until it is")
+        print("  re-tested against a poll neither method has seen.")
 
-    return {"rows": rows, "mean_absolute_gap": mae,
-            "interval_coverage": f"{hits}/{scored}", "warnings": warns}
+    return {"rows": rows, "mean_absolute_gap": mae, "method": method,
+            "interval_coverage": f"{hits}/{scored}", "hits": hits,
+            "scored": scored, "warnings": warns}
 
 
 # ---------------------------------------------------------------------------
@@ -351,10 +397,93 @@ def chart_opinion(res):
     charts.save(fig, "backtest_opinion.png")
 
 
+def compare_methods(df):
+    """Same holdout, both poststratification methods, side by side."""
+    lad = backtest_opinion(df, method="ladder", quiet=True)
+    mrp_ = backtest_opinion(df, method="mrp", quiet=True)
+    print()
+    print("=" * 96)
+    print("METHOD COMPARISON -- identical holdout, identical training evidence")
+    print("=" * 96)
+    print(f"  {'':<26}{'fallback ladder':>20}{'MRP':>20}")
+    print(f"  {'mean absolute gap':<26}"
+          f"{100 * lad['mean_absolute_gap']:>19.2f}p"
+          f"{100 * mrp_['mean_absolute_gap']:>19.2f}p")
+    print(f"  {'inside 90% interval':<26}{lad['interval_coverage']:>20}"
+          f"{mrp_['interval_coverage']:>20}")
+    print()
+    print(f"  {'subgroup':<28}{'observed':>10}{'ladder':>12}{'gap':>8}"
+          f"{'MRP':>12}{'gap':>8}   better")
+    lmap = {(r['subgroup_type'], r['subgroup']): r for r in lad['rows']}
+    for r in mrp_["rows"]:
+        key = (r["subgroup_type"], r["subgroup"])
+        l = lmap.get(key)
+        if r["predicted"] is None or l is None or l["predicted"] is None:
+            continue
+        better = "MRP" if abs(r["gap"]) < abs(l["gap"]) else "ladder"
+        print(f"  {key[0] + '/' + key[1]:<28}{r['observed']:>10.3f}"
+              f"{l['predicted']['median']:>12.3f}{100 * l['gap']:>7.1f}p"
+              f"{r['predicted']['median']:>12.3f}{100 * r['gap']:>7.1f}p   {better}")
+    wins = sum(1 for r in mrp_["rows"]
+               if r["predicted"] is not None
+               and lmap.get((r['subgroup_type'], r['subgroup']), {}).get("predicted")
+               and abs(r["gap"]) < abs(lmap[(r['subgroup_type'], r['subgroup'])]["gap"]))
+    total = sum(1 for r in mrp_["rows"] if r["predicted"] is not None)
+    print()
+    print(f"  MRP is closer on {wins}/{total} held-out subgroups.")
+    return {"ladder": lad, "mrp": mrp_,
+            "mrp_closer_on": f"{wins}/{total}"}
+
+
+def parameter_set_comparison(pre, post):
+    """
+    Both parameter sets against the same observed value.
+
+    This block exists because the honest thing and the flattering thing point
+    the same way here, and that is exactly when to be careful. The sourced
+    parameters were obtained AFTER the backtest had run and missed. They move
+    the prediction toward the observed value. The pre-registered result stays
+    the headline; this is reported as a post-hoc sensitivity, not as a win.
+    """
+    obs = pre["observed"]["observed_change"]
+    print()
+    print("=" * 96)
+    print("PARAMETER-SET COMPARISON -- same holdout, same observed value")
+    print("=" * 96)
+    print(f"  {'':<34}{'predicted':>12}{'p05':>10}{'p95':>10}{'inside?':>10}")
+    for tag, r in (("pre-registered (headline)", pre), ("literature-sourced", post)):
+        pr = r["predicted"]
+        print(f"  {tag:<34}{100 * pr['median']:>11.2f}p{100 * pr['p05']:>9.2f}p"
+              f"{100 * pr['p95']:>9.2f}p"
+              f"{('YES' if r['observed_inside_interval'] else 'no'):>10}")
+    print(f"  {'observed':<34}{100 * obs:>11.2f}p")
+    moved = abs(post["predicted"]["median"] - obs) - abs(pre["predicted"]["median"] - obs)
+    direction = "CLOSER TO" if moved < 0 else "FURTHER FROM"
+    print()
+    print(f"  Sourcing the parameters moved the prediction {direction} the "
+          f"observed value")
+    print(f"  by {100 * abs(moved):.2f} points.")
+    print()
+    print("  CAVEAT, stated because it cuts against us: the sourced values were")
+    print("  obtained AFTER this backtest had already run and missed. The")
+    print("  pre-registered result above remains the headline. Sourcing was")
+    print("  always intended -- the TODOs were in params.py from A4 and named in")
+    print("  docs/backtest.md before the run -- but a parameter change made after")
+    print("  seeing the result is a post-hoc change regardless of intent, and")
+    print("  should be discounted accordingly.")
+    return {"preregistered": pre, "sourced": post,
+            "moved_closer": bool(moved < 0),
+            "movement_pts": float(abs(moved) * 100)}
+
+
 def main():
     pop = E.Population.load()
-    impact = backtest_impact(pop)
-    op = backtest_opinion(pop.df)
+    impact = backtest_impact(pop, param_set="preregistered")
+    impact_sourced = backtest_impact(pop, param_set="sourced")
+    param_cmp = parameter_set_comparison(impact, impact_sourced)
+    P.use_param_set("sourced")
+    op = backtest_opinion(pop.df, method="mrp")
+    comparison = compare_methods(pop.df)
 
     out = {
         "pre_registration": "docs/backtest.md (committed before this code existed)",
@@ -362,6 +491,8 @@ def main():
         "n_seeds": N_SEEDS,
         "backtest_1_impact": impact,
         "backtest_2_opinion": op,
+        "method_comparison": comparison,
+        "parameter_set_comparison": param_cmp,
     }
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     OUT_JSON.write_text(json.dumps(out, indent=2, default=float), encoding="utf-8")

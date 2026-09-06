@@ -14,27 +14,27 @@
   "impact": {
     "child_poverty_rate": {
       "baseline": 0.13886158776499366,
-      "median": 0.10690189411589221,
-      "p05": 0.10089815013697649,
-      "p95": 0.11290706405319151
+      "median": 0.10675895946712137,
+      "p05": 0.10221203899518137,
+      "p95": 0.11172567860276737
     },
     "overall_poverty_rate": {
       "baseline": 0.10030136392453462,
-      "median": 0.08837057735628882,
-      "p05": 0.08617137821563423,
-      "p95": 0.09042987040138256
+      "median": 0.0883310838010461,
+      "p05": 0.08660156270918365,
+      "p95": 0.09003422185668752
     },
     "median_disposable_income": {
       "baseline": 81321.5234375,
       "median": 83250.5,
-      "p05": 83136.64375,
+      "p05": 83239.71953125,
       "p95": 83250.5
     },
     "annual_cost_usd": {
       "baseline": 0.0,
-      "median": 161065089399.44067,
-      "p05": 147150701377.2822,
-      "p95": 174935373122.13403
+      "median": 161964791093.38556,
+      "p05": 155416844660.4901,
+      "p95": 168491984451.233
     }
   },
   "by_metro": [
@@ -46,15 +46,15 @@
       "impact": {
         "child_poverty_rate": {
           "baseline": 0.1527536298519566,
-          "median": 0.11442315446273621,
+          "median": 0.1136358502581879,
           "p05": 0.1040238367920408,
-          "p95": 0.1235589064836419
+          "p95": 0.12078507631017735
         },
         "overall_poverty_rate": {
           "baseline": 0.09802846910933732,
-          "median": 0.08433829300779981,
+          "median": 0.08424545990592319,
           "p05": 0.08117451832261809,
-          "p95": 0.08705257652390712
+          "p95": 0.08612209907503993
         },
         "median_disposable_income": {
           "baseline": 101525.0,
@@ -64,9 +64,9 @@
         },
         "annual_cost_usd": {
           "baseline": 0.0,
-          "median": 7508708451.562464,
-          "p05": 6860032297.178659,
-          "p95": 8155328530.136139
+          "median": 7550651740.314428,
+          "p05": 7245392389.139858,
+          "p95": 7854943585.198301
         }
       },
       "top_subgroups": [
@@ -75,9 +75,9 @@
           "group": "single_parent",
           "households_weighted": 221248.23,
           "sample_n": 59,
-          "disposable_income_delta": 3622.133784924523,
-          "disposable_income_delta_p05": 3136.8974265922943,
-          "disposable_income_delta_p95": 4118.525351107323,
+          "disposable_income_delta": 3643.2771058163407,
+          "disposable_income_delta_p05": 3268.7033484507415,
+          "disposable_income_delta_p95": 4029.0983468783083,
           "pct_better_off": 0.8983050847457629,
           "low_sample": true
         },
@@ -86,9 +86,9 @@
           "group": "couple_with_kids",
           "households_weighted": 1241240.07,
           "sample_n": 331,
-          "disposable_income_delta": 3125.4354668470332,
-          "disposable_income_delta_p05": 2667.457941688006,
-          "disposable_income_delta_p95": 3613.296211173525,
+          "disposable_income_delta": 3155.0934922140545,
+          "disposable_income_delta_p05": 2782.008003718904,
+          "disposable_income_delta_p95": 3535.2156397885815,
           "pct_better_off": 0.7462235649546788,
           "low_sample": false
         },
@@ -97,9 +97,9 @@
           "group": "Q2",
           "households_weighted": 1181240.55,
           "sample_n": 315,
-          "disposable_income_delta": 1121.2869481646826,
-          "disposable_income_delta_p05": 949.8496285962302,
-          "disposable_income_delta_p95": 1304.6114316716269,
+          "disposable_income_delta": 1134.8623201884925,
+          "disposable_income_delta_p05": 990.1583909970238,
+          "disposable_income_delta_p95": 1276.548753100198,
           "pct_better_off": 0.24761904761904743,
           "low_sample": false
         }
@@ -113,27 +113,27 @@
       "impact": {
         "child_poverty_rate": {
           "baseline": 0.20656060326341802,
-          "median": 0.1435188059537273,
-          "p05": 0.12875547239623505,
-          "p95": 0.15750181015796877
+          "median": 0.13994322949087395,
+          "p05": 0.1304120764970728,
+          "p95": 0.15515595189358186
         },
         "overall_poverty_rate": {
           "baseline": 0.14106807919815254,
-          "median": 0.11446016815838041,
-          "p05": 0.10833914367309935,
-          "p95": 0.12012212377496953
+          "median": 0.11333226138302936,
+          "p05": 0.10917508400668,
+          "p95": 0.11912005211794373
         },
         "median_disposable_income": {
           "baseline": 83250.5,
           "median": 85281.0,
           "p05": 85281.0,
-          "p95": 86296.25
+          "p95": 86141.804296875
         },
         "annual_cost_usd": {
           "baseline": 0.0,
-          "median": 4310949617.729281,
-          "p05": 3938527351.7503333,
-          "p95": 4682191429.891147
+          "median": 4335030372.695644,
+          "p05": 4159772848.5400467,
+          "p95": 4509732437.796812
         }
       },
       "top_subgroups": [
@@ -142,9 +142,9 @@
           "group": "single_parent",
           "households_weighted": 137547.2676691729,
           "sample_n": 101,
-          "disposable_income_delta": 4042.3505617651626,
-          "disposable_income_delta_p05": 3489.826438616762,
-          "disposable_income_delta_p95": 4611.213904412903,
+          "disposable_income_delta": 4066.201337455525,
+          "disposable_income_delta_p05": 3638.009618415455,
+          "disposable_income_delta_p95": 4510.756625396428,
           "pct_better_off": 0.9504950495049517,
           "low_sample": false
         },
@@ -153,9 +153,9 @@
           "group": "couple_with_kids",
           "households_weighted": 609538.2360902255,
           "sample_n": 447,
-          "disposable_income_delta": 3923.741379312083,
-          "disposable_income_delta_p05": 3330.435856152964,
-          "disposable_income_delta_p95": 4558.626696079639,
+          "disposable_income_delta": 3969.8392964717723,
+          "disposable_income_delta_p05": 3473.257115883611,
+          "disposable_income_delta_p95": 4461.771616513073,
           "pct_better_off": 0.8836126157444896,
           "low_sample": false
         },
@@ -164,9 +164,9 @@
           "group": "Q4",
           "households_weighted": 579063.1533834586,
           "sample_n": 425,
-          "disposable_income_delta": 1899.2215187351055,
-          "disposable_income_delta_p05": 1600.630546185492,
-          "disposable_income_delta_p95": 2222.9585502239506,
+          "disposable_income_delta": 1926.719613904631,
+          "disposable_income_delta_p05": 1668.5181315187008,
+          "disposable_income_delta_p95": 2176.773059127689,
           "pct_better_off": 0.4402660878754057,
           "low_sample": false
         }
@@ -192,15 +192,15 @@
         },
         "median_disposable_income": {
           "baseline": 96448.75,
-          "median": 98392.09765625,
+          "median": 98450.2421875,
           "p05": 98073.1484375,
           "p95": 99189.921875
         },
         "annual_cost_usd": {
           "baseline": 0.0,
-          "median": 3018239951.550291,
-          "p05": 2757494670.5566626,
-          "p95": 3278158748.7008324
+          "median": 3035099692.6011057,
+          "p05": 2912396049.2128944,
+          "p95": 3157414447.426375
         }
       },
       "top_subgroups": [
@@ -209,9 +209,9 @@
           "group": "couple_with_kids",
           "households_weighted": 433489.87750000006,
           "sample_n": 365,
-          "disposable_income_delta": 3705.9188811001723,
-          "disposable_income_delta_p05": 3129.450580452702,
-          "disposable_income_delta_p95": 4320.8852617990115,
+          "disposable_income_delta": 3752.4204857395107,
+          "disposable_income_delta_p05": 3262.225931546987,
+          "disposable_income_delta_p95": 4230.678446797413,
           "pct_better_off": 0.8246575342465782,
           "low_sample": false
         },
@@ -220,9 +220,9 @@
           "group": "single_parent",
           "households_weighted": 109263.20200000002,
           "sample_n": 92,
-          "disposable_income_delta": 3607.2320118779717,
-          "disposable_income_delta_p05": 3102.063729062286,
-          "disposable_income_delta_p95": 4137.2303688381035,
+          "disposable_income_delta": 3631.1993421471625,
+          "disposable_income_delta_p05": 3230.4504344110896,
+          "disposable_income_delta_p95": 4044.5154327392565,
           "pct_better_off": 0.9239130434782616,
           "low_sample": true
         },
@@ -231,9 +231,9 @@
           "group": "Q4",
           "households_weighted": 532064.288,
           "sample_n": 448,
-          "disposable_income_delta": 1709.1620396205349,
-          "disposable_income_delta_p05": 1441.1601379394547,
-          "disposable_income_delta_p95": 1998.6573338099897,
+          "disposable_income_delta": 1733.2864379882812,
+          "disposable_income_delta_p05": 1502.2951398577022,
+          "disposable_income_delta_p95": 1957.1566528320323,
           "pct_better_off": 0.39732142857142977,
           "low_sample": false
         }
@@ -259,15 +259,15 @@
         },
         "median_disposable_income": {
           "baseline": 89951.1484375,
-          "median": 90966.3984375,
+          "median": 90973.6484375,
           "p05": 90966.3984375,
           "p95": 91372.5
         },
         "annual_cost_usd": {
           "baseline": 0.0,
-          "median": 2438557007.0967035,
-          "p05": 2227890446.3410597,
-          "p95": 2648555822.179958
+          "median": 2452178665.869744,
+          "p05": 2353041473.6332345,
+          "p95": 2551001651.5091753
         }
       },
       "top_subgroups": [
@@ -276,9 +276,9 @@
           "group": "couple_with_kids",
           "households_weighted": 327576.846,
           "sample_n": 334,
-          "disposable_income_delta": 4102.547937815771,
-          "disposable_income_delta_p05": 3466.554012677769,
-          "disposable_income_delta_p95": 4778.443705850017,
+          "disposable_income_delta": 4152.035083154006,
+          "disposable_income_delta_p05": 3613.641677289955,
+          "disposable_income_delta_p95": 4677.384365643709,
           "pct_better_off": 0.8832335329341293,
           "low_sample": false
         },
@@ -287,9 +287,9 @@
           "group": "single_parent",
           "households_weighted": 78461.52,
           "sample_n": 80,
-          "disposable_income_delta": 3855.0369064331044,
-          "disposable_income_delta_p05": 3309.6743069458016,
-          "disposable_income_delta_p95": 4428.02720489502,
+          "disposable_income_delta": 3881.503860473633,
+          "disposable_income_delta_p05": 3447.5828121948234,
+          "disposable_income_delta_p95": 4328.483603515625,
           "pct_better_off": 0.975,
           "low_sample": true
         },
@@ -298,9 +298,9 @@
           "group": "Q4",
           "households_weighted": 446249.895,
           "sample_n": 455,
-          "disposable_income_delta": 1383.1139852335164,
-          "disposable_income_delta_p05": 1161.671884443681,
-          "disposable_income_delta_p95": 1622.277011504121,
+          "disposable_income_delta": 1402.3705357142849,
+          "disposable_income_delta_p05": 1211.0982872596162,
+          "disposable_income_delta_p95": 1588.4862070741756,
           "pct_better_off": 0.32087912087912085,
           "low_sample": false
         }
@@ -316,58 +316,58 @@
           "baseline": 0.2030349891503225,
           "median": 0.16182081354487307,
           "p05": 0.1543157741242629,
-          "p95": 0.16879030706117146
+          "p95": 0.1685702976317305
         },
         "overall_poverty_rate": {
           "baseline": 0.12467281052198818,
           "median": 0.11061999223915286,
           "p05": 0.1079606750137072,
-          "p95": 0.11274996480655404
+          "p95": 0.1126684323389878
         },
         "median_disposable_income": {
           "baseline": 72488.8515625,
           "median": 74519.3515625,
-          "p05": 74417.828125,
+          "p05": 74463.29296875,
           "p95": 74620.875
         },
         "annual_cost_usd": {
           "baseline": 0.0,
-          "median": 2121937298.2965274,
-          "p05": 1938623462.0728436,
-          "p95": 2304670081.9209886
+          "median": 2133790335.1855197,
+          "p05": 2047525014.0917094,
+          "p95": 2219782250.3638835
         }
       },
       "top_subgroups": [
         {
           "group_type": "household_type",
-          "group": "single_parent",
-          "households_weighted": 83705.41235560019,
-          "sample_n": 93,
-          "disposable_income_delta": 4045.581117168567,
-          "disposable_income_delta_p05": 3482.651566283984,
-          "disposable_income_delta_p95": 4637.45893165417,
-          "pct_better_off": 0.9463014488470937,
-          "low_sample": true
-        },
-        {
-          "group_type": "household_type",
           "group": "couple_with_kids",
           "households_weighted": 307000.4932194877,
           "sample_n": 341,
-          "disposable_income_delta": 4027.6678170240702,
-          "disposable_income_delta_p05": 3418.8898197024696,
-          "disposable_income_delta_p95": 4679.290145649034,
+          "disposable_income_delta": 4075.052579122702,
+          "disposable_income_delta_p05": 3565.6167590832333,
+          "disposable_income_delta_p95": 4579.913806441816,
           "pct_better_off": 0.9062962419112263,
           "low_sample": false
+        },
+        {
+          "group_type": "household_type",
+          "group": "single_parent",
+          "households_weighted": 83705.41235560019,
+          "sample_n": 93,
+          "disposable_income_delta": 4072.1383825278917,
+          "disposable_income_delta_p05": 3626.262198908864,
+          "disposable_income_delta_p95": 4533.9246161552055,
+          "pct_better_off": 0.9463014488470937,
+          "low_sample": true
         },
         {
           "group_type": "income_quintile",
           "group": "Q4",
           "households_weighted": 356260.91813159216,
           "sample_n": 396,
-          "disposable_income_delta": 1278.794548092926,
-          "disposable_income_delta_p05": 1080.2353381220246,
-          "disposable_income_delta_p95": 1490.1854078780643,
+          "disposable_income_delta": 1294.4912363023045,
+          "disposable_income_delta_p05": 1126.0688018684036,
+          "disposable_income_delta_p95": 1458.8599818353796,
           "pct_better_off": 0.2884145989492331,
           "low_sample": false
         }
@@ -394,14 +394,14 @@
         "median_disposable_income": {
           "baseline": 140815.171875,
           "median": 141424.328125,
-          "p05": 141320.796875,
+          "p05": 141424.328125,
           "p95": 141525.84375
         },
         "annual_cost_usd": {
           "baseline": 0.0,
-          "median": 1163975454.8096051,
-          "p05": 1063419797.0565193,
-          "p95": 1264212383.847517
+          "median": 1170477363.7306666,
+          "p05": 1123157056.855922,
+          "p95": 1217647692.6149418
         }
       },
       "top_subgroups": [
@@ -410,9 +410,9 @@
           "group": "single_parent",
           "households_weighted": 54883.082000000024,
           "sample_n": 62,
-          "disposable_income_delta": 2481.069351688507,
-          "disposable_income_delta_p05": 2138.1973597372717,
-          "disposable_income_delta_p95": 2841.7398673765124,
+          "disposable_income_delta": 2496.4112903225796,
+          "disposable_income_delta_p05": 2225.93218797253,
+          "disposable_income_delta_p95": 2778.109964481474,
           "pct_better_off": 0.7903225806451613,
           "low_sample": true
         },
@@ -421,9 +421,9 @@
           "group": "couple_with_kids",
           "households_weighted": 309823.85,
           "sample_n": 350,
-          "disposable_income_delta": 1976.3669210379471,
-          "disposable_income_delta_p05": 1673.0634917689733,
-          "disposable_income_delta_p95": 2299.6001929408462,
+          "disposable_income_delta": 1999.947045200894,
+          "disposable_income_delta_p05": 1744.0609779575907,
+          "disposable_income_delta_p95": 2250.2250781249986,
           "pct_better_off": 0.5400000000000007,
           "low_sample": false
         },
@@ -432,9 +432,9 @@
           "group": "Q2",
           "households_weighted": 208024.58499999996,
           "sample_n": 235,
-          "disposable_income_delta": 915.9166472739364,
-          "disposable_income_delta_p05": 779.7130244348405,
-          "disposable_income_delta_p95": 1060.6054047539897,
+          "disposable_income_delta": 925.3101728723404,
+          "disposable_income_delta_p05": 813.5201122007983,
+          "disposable_income_delta_p95": 1038.124778091755,
           "pct_better_off": 0.23829787234042574,
           "low_sample": false
         }
@@ -443,35 +443,52 @@
   ],
   "opinion": {
     "overall_support": {
-      "median": 0.5398173575213021,
-      "p05": 0.5338823271255982,
-      "p95": 0.5462192776770057
+      "median": 0.525238868237687,
+      "p05": 0.5108290694358576,
+      "p95": 0.5445262942506505
     },
     "overall_evidence_ids": [
       "ev_mc2107_inc_100p",
       "ev_mc2107_inc_50_100",
       "ev_mc2107_inc_lt50",
+      "ev_mc2107_nat",
+      "ev_mc2107_reg_mw",
+      "ev_mc2107_reg_ne",
+      "ev_mc2107_reg_s",
+      "ev_mc2107_reg_w",
+      "ev_yg2107_inc_100p",
       "ev_yg2107_inc_50_100",
-      "ev_yg2107_inc_lt50"
+      "ev_yg2107_inc_lt50",
+      "ev_yg2107_nat",
+      "ev_yg2107_reg_mw",
+      "ev_yg2107_reg_ne",
+      "ev_yg2107_reg_s",
+      "ev_yg2107_reg_w"
     ],
     "by_group": [
       {
         "group_type": "income_quintile",
         "group": "Q1",
         "households_weighted": 26593489.118047796,
-        "disposable_income_delta": 956.9065289105221,
+        "disposable_income_delta": 962.8074141337836,
         "pct_better_off": 0.1943827874581409,
         "sample_n": 5788,
         "low_sample": false,
         "evidence_ids": [
+          "ev_mc2107_inc_100p",
+          "ev_mc2107_inc_50_100",
           "ev_mc2107_inc_lt50",
-          "ev_yg2107_inc_lt50"
+          "ev_mc2107_nat",
+          "ev_yg2107_inc_100p",
+          "ev_yg2107_inc_50_100",
+          "ev_yg2107_inc_lt50",
+          "ev_yg2107_nat"
         ],
         "evidence_coverage": 1.0,
         "support": {
-          "median": 0.5479005761173096,
-          "p05": 0.5399543635190659,
-          "p95": 0.5558241043869602
+          "median": 0.5286033732924038,
+          "p05": 0.5060742657457356,
+          "p95": 0.5558581131540186
         },
         "evidence_status": "ok"
       },
@@ -479,21 +496,25 @@
         "group_type": "income_quintile",
         "group": "Q2",
         "households_weighted": 26535611.215614833,
-        "disposable_income_delta": 1089.130392743369,
+        "disposable_income_delta": 1101.8846296410632,
         "pct_better_off": 0.23324269559714517,
         "sample_n": 5768,
         "low_sample": false,
         "evidence_ids": [
+          "ev_mc2107_inc_100p",
           "ev_mc2107_inc_50_100",
           "ev_mc2107_inc_lt50",
+          "ev_mc2107_nat",
+          "ev_yg2107_inc_100p",
           "ev_yg2107_inc_50_100",
-          "ev_yg2107_inc_lt50"
+          "ev_yg2107_inc_lt50",
+          "ev_yg2107_nat"
         ],
         "evidence_coverage": 1.0,
         "support": {
-          "median": 0.5265542095046698,
-          "p05": 0.5169182868628143,
-          "p95": 0.5352272103344206
+          "median": 0.5221499487140788,
+          "p05": 0.503200922898191,
+          "p95": 0.5359429381016203
         },
         "evidence_status": "ok"
       },
@@ -501,20 +522,25 @@
         "group_type": "income_quintile",
         "group": "Q3",
         "households_weighted": 26524889.208592,
-        "disposable_income_delta": 1233.3566106068224,
+        "disposable_income_delta": 1250.4275819494599,
         "pct_better_off": 0.2682457931580781,
         "sample_n": 5825,
         "low_sample": false,
         "evidence_ids": [
           "ev_mc2107_inc_100p",
           "ev_mc2107_inc_50_100",
-          "ev_yg2107_inc_50_100"
+          "ev_mc2107_inc_lt50",
+          "ev_mc2107_nat",
+          "ev_yg2107_inc_100p",
+          "ev_yg2107_inc_50_100",
+          "ev_yg2107_inc_lt50",
+          "ev_yg2107_nat"
         ],
         "evidence_coverage": 1.0,
         "support": {
-          "median": 0.506225911740504,
-          "p05": 0.4982934126188382,
-          "p95": 0.5146859104276104
+          "median": 0.5159348089134215,
+          "p05": 0.4875252434260563,
+          "p95": 0.5334737939016811
         },
         "evidence_status": "ok"
       },
@@ -522,18 +548,25 @@
         "group_type": "income_quintile",
         "group": "Q4",
         "households_weighted": 26535863.17834838,
-        "disposable_income_delta": 1466.2330192740014,
+        "disposable_income_delta": 1487.1603782493776,
         "pct_better_off": 0.33516436120803256,
         "sample_n": 6078,
         "low_sample": false,
         "evidence_ids": [
-          "ev_mc2107_inc_100p"
+          "ev_mc2107_inc_100p",
+          "ev_mc2107_inc_50_100",
+          "ev_mc2107_inc_lt50",
+          "ev_mc2107_nat",
+          "ev_yg2107_inc_100p",
+          "ev_yg2107_inc_50_100",
+          "ev_yg2107_inc_lt50",
+          "ev_yg2107_nat"
         ],
         "evidence_coverage": 1.0,
         "support": {
-          "median": 0.559971429154013,
-          "p05": 0.5462296483372429,
-          "p95": 0.572951937051056
+          "median": 0.5285793953925638,
+          "p05": 0.5094696972185712,
+          "p95": 0.5614208100019072
         },
         "evidence_status": "ok"
       },
@@ -541,18 +574,25 @@
         "group_type": "income_quintile",
         "group": "Q5",
         "households_weighted": 26547292.27939698,
-        "disposable_income_delta": 586.7557342774097,
+        "disposable_income_delta": 594.9183273083931,
         "pct_better_off": 0.21281507808117944,
         "sample_n": 6541,
         "low_sample": false,
         "evidence_ids": [
-          "ev_mc2107_inc_100p"
+          "ev_mc2107_inc_100p",
+          "ev_mc2107_inc_50_100",
+          "ev_mc2107_inc_lt50",
+          "ev_mc2107_nat",
+          "ev_yg2107_inc_100p",
+          "ev_yg2107_inc_50_100",
+          "ev_yg2107_inc_lt50",
+          "ev_yg2107_nat"
         ],
         "evidence_coverage": 1.0,
         "support": {
-          "median": 0.5584822287056845,
-          "p05": 0.5467870885378425,
-          "p95": 0.5724153835840404
+          "median": 0.5313746926091187,
+          "p05": 0.512849611433524,
+          "p95": 0.5625962400097095
         },
         "evidence_status": "ok"
       },
@@ -565,13 +605,20 @@
         "sample_n": 13075,
         "low_sample": false,
         "evidence_ids": [
-          "ev_mc2107_inc_100p"
+          "ev_mc2107_inc_100p",
+          "ev_mc2107_inc_50_100",
+          "ev_mc2107_inc_lt50",
+          "ev_mc2107_nat",
+          "ev_yg2107_inc_100p",
+          "ev_yg2107_inc_50_100",
+          "ev_yg2107_inc_lt50",
+          "ev_yg2107_nat"
         ],
         "evidence_coverage": 1.0,
         "support": {
-          "median": 0.55975494685539,
-          "p05": 0.5500802269255683,
-          "p95": 0.5685489476770299
+          "median": 0.5300210644508574,
+          "p05": 0.5125391867930033,
+          "p95": 0.5613293285441892
         },
         "evidence_status": "ok"
       },
@@ -584,14 +631,20 @@
         "sample_n": 8111,
         "low_sample": false,
         "evidence_ids": [
+          "ev_mc2107_inc_100p",
           "ev_mc2107_inc_50_100",
-          "ev_yg2107_inc_50_100"
+          "ev_mc2107_inc_lt50",
+          "ev_mc2107_nat",
+          "ev_yg2107_inc_100p",
+          "ev_yg2107_inc_50_100",
+          "ev_yg2107_inc_lt50",
+          "ev_yg2107_nat"
         ],
         "evidence_coverage": 1.0,
         "support": {
-          "median": 0.5015358846259423,
-          "p05": 0.495121381824926,
-          "p95": 0.5082886360438131
+          "median": 0.5143715121918091,
+          "p05": 0.4841211050310581,
+          "p95": 0.5325538187110667
         },
         "evidence_status": "ok"
       },
@@ -604,14 +657,20 @@
         "sample_n": 8814,
         "low_sample": false,
         "evidence_ids": [
+          "ev_mc2107_inc_100p",
+          "ev_mc2107_inc_50_100",
           "ev_mc2107_inc_lt50",
-          "ev_yg2107_inc_lt50"
+          "ev_mc2107_nat",
+          "ev_yg2107_inc_100p",
+          "ev_yg2107_inc_50_100",
+          "ev_yg2107_inc_lt50",
+          "ev_yg2107_nat"
         ],
         "evidence_coverage": 1.0,
         "support": {
-          "median": 0.548342070975395,
-          "p05": 0.5422558591356618,
-          "p95": 0.5543130126086544
+          "median": 0.5279747379148929,
+          "p05": 0.508280797266292,
+          "p95": 0.5546074162345991
         },
         "evidence_status": "ok"
       },
@@ -623,66 +682,36 @@
         "pct_better_off": 0.0,
         "sample_n": 9404,
         "low_sample": false,
-        "evidence_ids": [
-          "ev_mc2107_inc_100p",
-          "ev_mc2107_inc_50_100",
-          "ev_mc2107_inc_lt50",
-          "ev_yg2107_inc_50_100",
-          "ev_yg2107_inc_lt50"
-        ],
-        "evidence_coverage": 1.0,
-        "support": {
-          "median": 0.5391352517862871,
-          "p05": 0.5257919521848021,
-          "p95": 0.5548729779811922
-        },
-        "evidence_status": "ok"
+        "evidence_ids": [],
+        "evidence_coverage": 0.0,
+        "support": null,
+        "evidence_status": "insufficient_evidence"
       },
       {
         "group_type": "household_type",
         "group": "couple_with_kids",
         "households_weighted": 23042708.1936986,
-        "disposable_income_delta": 3834.996644261305,
+        "disposable_income_delta": 3880.457521496428,
         "pct_better_off": 0.8584000745470269,
         "sample_n": 5280,
         "low_sample": false,
-        "evidence_ids": [
-          "ev_mc2107_inc_100p",
-          "ev_mc2107_inc_50_100",
-          "ev_mc2107_inc_lt50",
-          "ev_yg2107_inc_50_100",
-          "ev_yg2107_inc_lt50"
-        ],
-        "evidence_coverage": 1.0,
-        "support": {
-          "median": 0.542204550648165,
-          "p05": 0.529269836318703,
-          "p95": 0.5560060743352864
-        },
-        "evidence_status": "ok"
+        "evidence_ids": [],
+        "evidence_coverage": 0.0,
+        "support": null,
+        "evidence_status": "insufficient_evidence"
       },
       {
         "group_type": "household_type",
         "group": "other",
         "households_weighted": 23566904.736959785,
-        "disposable_income_delta": 1329.8768600738847,
+        "disposable_income_delta": 1348.0767834788599,
         "pct_better_off": 0.3374918206886209,
         "sample_n": 5466,
         "low_sample": false,
-        "evidence_ids": [
-          "ev_mc2107_inc_100p",
-          "ev_mc2107_inc_50_100",
-          "ev_mc2107_inc_lt50",
-          "ev_yg2107_inc_50_100",
-          "ev_yg2107_inc_lt50"
-        ],
-        "evidence_coverage": 1.0,
-        "support": {
-          "median": 0.5438555892353936,
-          "p05": 0.5320349623770451,
-          "p95": 0.5552212244200125
-        },
-        "evidence_status": "ok"
+        "evidence_ids": [],
+        "evidence_coverage": 0.0,
+        "support": null,
+        "evidence_status": "insufficient_evidence"
       },
       {
         "group_type": "household_type",
@@ -692,64 +721,49 @@
         "pct_better_off": 0.0,
         "sample_n": 8596,
         "low_sample": false,
-        "evidence_ids": [
-          "ev_mc2107_inc_100p",
-          "ev_mc2107_inc_50_100",
-          "ev_mc2107_inc_lt50",
-          "ev_yg2107_inc_50_100",
-          "ev_yg2107_inc_lt50"
-        ],
-        "evidence_coverage": 1.0,
-        "support": {
-          "median": 0.5367661310376088,
-          "p05": 0.5246909640388204,
-          "p95": 0.5466219982238514
-        },
-        "evidence_status": "ok"
+        "evidence_ids": [],
+        "evidence_coverage": 0.0,
+        "support": null,
+        "evidence_status": "insufficient_evidence"
       },
       {
         "group_type": "household_type",
         "group": "single_parent",
         "households_weighted": 5568581.649635884,
-        "disposable_income_delta": 3946.338982889152,
+        "disposable_income_delta": 3969.3569421473385,
         "pct_better_off": 0.9488562798459671,
         "sample_n": 1254,
         "low_sample": false,
-        "evidence_ids": [
-          "ev_mc2107_inc_100p",
-          "ev_mc2107_inc_50_100",
-          "ev_mc2107_inc_lt50",
-          "ev_yg2107_inc_50_100",
-          "ev_yg2107_inc_lt50"
-        ],
-        "evidence_coverage": 1.0,
-        "support": {
-          "median": 0.5370270702122892,
-          "p05": 0.52593241323934,
-          "p95": 0.5486698777824623
-        },
-        "evidence_status": "ok"
+        "evidence_ids": [],
+        "evidence_coverage": 0.0,
+        "support": null,
+        "evidence_status": "insufficient_evidence"
       },
       {
         "group_type": "census_region",
         "group": "Midwest",
         "households_weighted": 28464223.28466666,
-        "disposable_income_delta": 1101.5249999937419,
+        "disposable_income_delta": 1114.5814619868956,
         "pct_better_off": 0.24698356033222418,
         "sample_n": 6188,
         "low_sample": false,
         "evidence_ids": [
-          "ev_mc2107_inc_100p",
-          "ev_mc2107_inc_50_100",
-          "ev_mc2107_inc_lt50",
-          "ev_yg2107_inc_50_100",
-          "ev_yg2107_inc_lt50"
+          "ev_mc2107_nat",
+          "ev_mc2107_reg_mw",
+          "ev_mc2107_reg_ne",
+          "ev_mc2107_reg_s",
+          "ev_mc2107_reg_w",
+          "ev_yg2107_nat",
+          "ev_yg2107_reg_mw",
+          "ev_yg2107_reg_ne",
+          "ev_yg2107_reg_s",
+          "ev_yg2107_reg_w"
         ],
         "evidence_coverage": 1.0,
         "support": {
-          "median": 0.5388540283325967,
-          "p05": 0.5259730449470866,
-          "p95": 0.5513085850398466
+          "median": 0.497070316304775,
+          "p05": 0.46193142952131816,
+          "p95": 0.5343554016953289
         },
         "evidence_status": "ok"
       },
@@ -757,22 +771,27 @@
         "group_type": "census_region",
         "group": "Northeast",
         "households_weighted": 23188176.39288889,
-        "disposable_income_delta": 931.2951157568771,
+        "disposable_income_delta": 941.1540031091677,
         "pct_better_off": 0.22640620316543839,
         "sample_n": 4464,
         "low_sample": false,
         "evidence_ids": [
-          "ev_mc2107_inc_100p",
-          "ev_mc2107_inc_50_100",
-          "ev_mc2107_inc_lt50",
-          "ev_yg2107_inc_50_100",
-          "ev_yg2107_inc_lt50"
+          "ev_mc2107_nat",
+          "ev_mc2107_reg_mw",
+          "ev_mc2107_reg_ne",
+          "ev_mc2107_reg_s",
+          "ev_mc2107_reg_w",
+          "ev_yg2107_nat",
+          "ev_yg2107_reg_mw",
+          "ev_yg2107_reg_ne",
+          "ev_yg2107_reg_s",
+          "ev_yg2107_reg_w"
         ],
         "evidence_coverage": 1.0,
         "support": {
-          "median": 0.5406341752414099,
-          "p05": 0.5275548193980347,
-          "p95": 0.5538107533141187
+          "median": 0.535571569536083,
+          "p05": 0.5107317466368202,
+          "p95": 0.5642559592616109
         },
         "evidence_status": "ok"
       },
@@ -780,22 +799,27 @@
         "group_type": "census_region",
         "group": "South",
         "households_weighted": 51139932.55072221,
-        "disposable_income_delta": 1133.2160061025754,
+        "disposable_income_delta": 1146.4321725528866,
         "pct_better_off": 0.26484943213873713,
         "sample_n": 11231,
         "low_sample": false,
         "evidence_ids": [
-          "ev_mc2107_inc_100p",
-          "ev_mc2107_inc_50_100",
-          "ev_mc2107_inc_lt50",
-          "ev_yg2107_inc_50_100",
-          "ev_yg2107_inc_lt50"
+          "ev_mc2107_nat",
+          "ev_mc2107_reg_mw",
+          "ev_mc2107_reg_ne",
+          "ev_mc2107_reg_s",
+          "ev_mc2107_reg_w",
+          "ev_yg2107_nat",
+          "ev_yg2107_reg_mw",
+          "ev_yg2107_reg_ne",
+          "ev_yg2107_reg_s",
+          "ev_yg2107_reg_w"
         ],
         "evidence_coverage": 1.0,
         "support": {
-          "median": 0.5392332603455262,
-          "p05": 0.5275755631023055,
-          "p95": 0.550250107472758
+          "median": 0.5228744315944983,
+          "p05": 0.49934738378191007,
+          "p95": 0.5438111675676924
         },
         "evidence_status": "ok"
       },
@@ -803,22 +827,27 @@
         "group_type": "census_region",
         "group": "West",
         "households_weighted": 29944812.771722212,
-        "disposable_income_delta": 1025.8281713587837,
+        "disposable_income_delta": 1037.9594504902539,
         "pct_better_off": 0.24020051358400082,
         "sample_n": 8117,
         "low_sample": false,
         "evidence_ids": [
-          "ev_mc2107_inc_100p",
-          "ev_mc2107_inc_50_100",
-          "ev_mc2107_inc_lt50",
-          "ev_yg2107_inc_50_100",
-          "ev_yg2107_inc_lt50"
+          "ev_mc2107_nat",
+          "ev_mc2107_reg_mw",
+          "ev_mc2107_reg_ne",
+          "ev_mc2107_reg_s",
+          "ev_mc2107_reg_w",
+          "ev_yg2107_nat",
+          "ev_yg2107_reg_mw",
+          "ev_yg2107_reg_ne",
+          "ev_yg2107_reg_s",
+          "ev_yg2107_reg_w"
         ],
         "evidence_coverage": 1.0,
         "support": {
-          "median": 0.5409004848347498,
-          "p05": 0.5296419577104248,
-          "p95": 0.5532886723531611
+          "median": 0.5514948496547858,
+          "p05": 0.5253302373507702,
+          "p95": 0.5794950684667269
         },
         "evidence_status": "ok"
       }
@@ -827,23 +856,24 @@
   "warnings": [
     "Support estimates poststratify national survey crosstabs onto population cells; no fitted hierarchical model.",
     "No cost-of-living adjustment across metros; federal poverty thresholds applied uniformly.",
-    "Unsourced parameters (marked TODO in model/params.py): take_up_rate, labor_supply_elasticity, marginal_propensity_to_consume, effective_tax_rate (non-refundable cap).",
+    "Unsourced parameters (marked TODO in model/params.py): labor_supply_elasticity upper bound (0.25): the literature reports participation elasticities, not earnings lost per dollar transferred, so no published estimate exists in this functional form, effective_tax_rate (non-refundable cap): a statutory MARGINAL rate used to approximate TOTAL liability; JCT measured average effective rates are far lower, so this under-binds the cap.",
     "Poverty thresholds for 1- and 2-person households use the 'householder under 65' variant; the sample does not carry householder age. Does not affect child poverty.",
     "Metro results come from a 2,000-household oversample per metro. Intervals are roughly 3.9x wider than the national ones.",
     "Non-refundable credits are capped using a flat effective tax rate, not a tax calculator.",
-    "Evidence ev_yg2107_inc_100p excluded: sample_size=287 is below the minimum of 300 needed for a stable predictor weight.",
-    "Evidence ev_yg2107_reg_ne excluded: sample_size=252 is below the minimum of 300 needed for a stable predictor weight.",
-    "Evidence ev_dfp_parents excluded: sample_size=None is below the minimum of 300 needed for a stable predictor weight.",
-    "Evidence ev_dfp_nonparents excluded: sample_size=None is below the minimum of 300 needed for a stable predictor weight.",
-    "8 evidence record(s) held out for backtesting and excluded from poststratification.",
-    "Every covered cell resolved at the 'income_band' level, so evidence at these levels did not contribute: census_region, national. Differences along those dimensions in the output reflect the composition of the population, not measured differences in opinion.",
-    "Evidence covers 100.0% of households by weight (168 of 168 population cells)."
+    "Poststratification method: mrp.",
+    "ev_dfp_parents: no sample_size published, so no observation variance can be computed. Dropped (NOT imputed).",
+    "ev_dfp_nonparents: no sample_size published, so no observation variance can be computed. Dropped (NOT imputed).",
+    "MRP fitted on 16 crosstab observations across 2 dimension(s): census_region, income_band. Partial pooling, so no MIN_EVIDENCE_N exclusion is applied -- 2 thin record(s) are USED at reduced weight: ev_yg2107_inc_100p, ev_yg2107_reg_ne.",
+    "Estimated survey house effects (logit scale, median): morning_consult +0.049; yougov_economist -0.049. Spread 0.098 logits ~ 2.5 points at the midpoint -- instrument effect, removed from the population estimate.",
+    "Between-level SD for census_region: 0.102 logits (median posterior).",
+    "Between-level SD for income_band: 0.038 logits (median posterior).",
+    "No usable evidence on: household_type. These dimensions are EXCLUDED from the model rather than imputed, and groups defined on them report insufficient_evidence."
   ],
   "induced_consumption_usd": {
     "baseline": 0.0,
-    "median": 80491282496.77673,
-    "p05": 50689569153.710396,
-    "p95": 110392216353.86205
+    "median": 77280822505.65033,
+    "p05": 37928268545.93364,
+    "p95": 116218418975.82043
   },
   "in_support": true,
   "nearest_policies": [

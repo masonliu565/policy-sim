@@ -184,3 +184,101 @@ judge:
 3. Get citations for the three TODO parameters, starting with
    `labor_supply_elasticity`, which dominates the sensitivity.
 4. Compute poverty on an SPM-comparable basis, or stop comparing against SPM.
+
+---
+
+# POST-HOC, PART 2 — sourced parameters and a better model
+
+**Added later still.** Both changes below were made *after* the results above
+were known. Neither replaces the headline. Both are reported with the direction
+of their effect stated plainly.
+
+## Parameters now have citations. The miss survives them.
+
+The three TODO parameters were sourced from the literature after the backtest
+had already run and missed:
+
+| parameter | pre-registered | sourced | source |
+|---|---|---|---|
+| `take_up_rate` | 0.90 [0.80, 0.97] | 0.90 [0.85, 0.93] | Schild et al., BLS WP 601 (2023): payments reached 88.5–91% of eligible children |
+| `labor_supply_elasticity` | 0.10 [0.00, 0.25] | 0.00 [0.00, 0.25] | Ananat et al., NBER WP 29823 (2022): +0.1pp employment per $100/mo, s.e. 0.1pp — indistinguishable from zero |
+| `marginal_propensity_to_consume` | 0.50 [0.30, 0.70] | 0.44 [0.21, 0.75] | Schild et al., *Review of Income and Wealth* (2026), DOI 10.1111/roiw.70068 |
+
+Result:
+
+| | predicted | interval | observed inside? |
+|---|---|---|---|
+| pre-registered | −3.20 pts | [−3.80, −2.60] | no |
+| literature-sourced | −3.21 pts | [−3.66, −2.71] | no |
+
+**Sourcing the parameters moved the prediction by 0.01 points.** The miss is not
+a parameter problem. The uncertainty draws sample each parameter's declared
+*range*, and the elasticity range was already [0.00, 0.25] — sourcing changed
+its central value, not its span. The prediction is therefore robust across the
+entire declared parameter space, and the −4.50 observed value lies outside all
+of it. That is much stronger evidence for the registered OPM-vs-SPM measure
+mismatch than the original single run was.
+
+**One parameter could not be sourced, and this is the more interesting finding.**
+Our functional form is *earnings change = −elasticity × transfer* — dollars of
+earnings lost per dollar transferred. **No paper in this literature reports that
+quantity.** Corinth et al. (NBER WP 29366) estimate participation elasticities
+with respect to the return to work (0.75 for single mothers on EITC, 0.25
+otherwise) and project 1.46M workers exiting, but publish no aggregate dollar
+earnings loss, so their result cannot be converted into our coefficient without
+inventing the missing aggregates. Ananat et al. estimate a reduced-form
+employment effect per dollar and find essentially zero. Schanzenbach & Strain
+find no significant effect overall but −4.5pp for unmarried women with low
+education.
+
+So the upper bound of 0.25 remains **unsourced by construction** — it is retained
+so the model does not assume the null, and it is labelled as unsourced in
+`params.py` and in every scenario's warnings. This is a specification problem in
+our model, not a gap in the literature, and it is recorded as such.
+
+Similarly, the 12% effective tax rate is a statutory *marginal* bracket being
+used to approximate *total* liability. JCT (JCX-14-22, Table A-6) puts average
+effective individual income tax rates at −3.3% to +5.0% across $30k–$100k on
+expanded income. Our 12% overstates liability and therefore under-binds the
+non-refundable credit cap. None of the five demo scenarios exercise it — all are
+fully refundable — but it is an open citation.
+
+## The fallback ladder was replaced with MRP
+
+`model/mrp.py` fits a hierarchical model on the crosstabs: level effects with
+partial pooling, plus an explicit survey **house effect**, sampled by collapsed
+Gibbs with the level effects integrated out.
+
+Re-run against the **same held-out October 2021 poll**:
+
+| | fallback ladder | MRP |
+|---|---|---|
+| mean absolute gap | 3.36 pts | **2.06 pts** |
+| observed inside 90% interval | 2 / 8 | **4 / 8** |
+| closer on | — | **6 of 8 subgroups** |
+
+Three things changed, all of which the A6 write-up had already identified as
+defects:
+
+1. **Thin crosstabs are now used.** The n=252 Northeast and n=287 $100k+ records
+   were previously discarded by the `MIN_EVIDENCE_N` gate. Partial pooling uses
+   them at a weight set by their own precision.
+2. **Region evidence now enters.** Under the ladder every cell resolved at
+   `income_band` and the region crosstabs never contributed, so regional
+   predictions were flat (53.9–54.1) against observed values spanning 48–53.
+   MRP predicts Midwest 0.497 and West 0.551, tracking the real spread.
+3. **A house effect is estimated and removed.** YouGov reads 0.51 nationally,
+   Morning Consult 0.54 on a differently worded item. MRP recovers a 0.098-logit
+   gap ≈ 2.5 points and attributes it to the instrument rather than to the
+   public. Population estimates use the average instrument, not either pollster.
+
+**CAVEAT, and it matters.** MRP was built *after* seeing the ladder's performance
+on this holdout. The design decisions came from structural defects visible
+without it — discarded records, unused dimensions, unmodelled house effects —
+but a second look at the same test set is still a second look. Treat 2.06 pts as
+indicative rather than as a clean out-of-sample result until it is re-tested
+against a poll neither method has seen.
+
+**What MRP does not fix:** the residual bias is still one-directional. Every
+training record was fielded in July 2021, so no time effect is identified, and
+support genuinely fell by October. The model is answering a question about July.

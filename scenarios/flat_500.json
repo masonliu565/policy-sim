@@ -558,7 +558,7 @@
         "sample_n": 9404,
         "low_sample": false,
         "evidence_ids": [],
-        "evidence_coverage": 1.0,
+        "evidence_coverage": 0.0,
         "support": null,
         "evidence_status": "out_of_support"
       },
@@ -571,7 +571,7 @@
         "sample_n": 5280,
         "low_sample": false,
         "evidence_ids": [],
-        "evidence_coverage": 1.0,
+        "evidence_coverage": 0.0,
         "support": null,
         "evidence_status": "out_of_support"
       },
@@ -584,7 +584,7 @@
         "sample_n": 5466,
         "low_sample": false,
         "evidence_ids": [],
-        "evidence_coverage": 1.0,
+        "evidence_coverage": 0.0,
         "support": null,
         "evidence_status": "out_of_support"
       },
@@ -597,7 +597,7 @@
         "sample_n": 8596,
         "low_sample": false,
         "evidence_ids": [],
-        "evidence_coverage": 1.0,
+        "evidence_coverage": 0.0,
         "support": null,
         "evidence_status": "out_of_support"
       },
@@ -610,7 +610,7 @@
         "sample_n": 1254,
         "low_sample": false,
         "evidence_ids": [],
-        "evidence_coverage": 1.0,
+        "evidence_coverage": 0.0,
         "support": null,
         "evidence_status": "out_of_support"
       },
@@ -671,24 +671,25 @@
   "warnings": [
     "Support estimates poststratify national survey crosstabs onto population cells; no fitted hierarchical model.",
     "No cost-of-living adjustment across metros; federal poverty thresholds applied uniformly.",
-    "Unsourced parameters (marked TODO in model/params.py): take_up_rate, labor_supply_elasticity, marginal_propensity_to_consume, effective_tax_rate (non-refundable cap).",
+    "Unsourced parameters (marked TODO in model/params.py): labor_supply_elasticity upper bound (0.25): the literature reports participation elasticities, not earnings lost per dollar transferred, so no published estimate exists in this functional form, effective_tax_rate (non-refundable cap): a statutory MARGINAL rate used to approximate TOTAL liability; JCT measured average effective rates are far lower, so this under-binds the cap.",
     "Poverty thresholds for 1- and 2-person households use the 'householder under 65' variant; the sample does not carry householder age. Does not affect child poverty.",
     "Metro results come from a 2,000-household oversample per metro. Intervals are roughly 3.9x wider than the national ones.",
     "Non-refundable credits are capped using a flat effective tax rate, not a tax calculator.",
-    "Evidence ev_yg2107_inc_100p excluded: sample_size=287 is below the minimum of 300 needed for a stable predictor weight.",
-    "Evidence ev_yg2107_reg_ne excluded: sample_size=252 is below the minimum of 300 needed for a stable predictor weight.",
-    "Evidence ev_dfp_parents excluded: sample_size=None is below the minimum of 300 needed for a stable predictor weight.",
-    "Evidence ev_dfp_nonparents excluded: sample_size=None is below the minimum of 300 needed for a stable predictor weight.",
-    "8 evidence record(s) held out for backtesting and excluded from poststratification.",
-    "Every covered cell resolved at the 'income_band' level, so evidence at these levels did not contribute: census_region, national. Differences along those dimensions in the output reflect the composition of the population, not measured differences in opinion.",
-    "Evidence covers 100.0% of households by weight (168 of 168 population cells).",
+    "Poststratification method: mrp.",
+    "ev_dfp_parents: no sample_size published, so no observation variance can be computed. Dropped (NOT imputed).",
+    "ev_dfp_nonparents: no sample_size published, so no observation variance can be computed. Dropped (NOT imputed).",
+    "MRP fitted on 16 crosstab observations across 2 dimension(s): census_region, income_band. Partial pooling, so no MIN_EVIDENCE_N exclusion is applied -- 2 thin record(s) are USED at reduced weight: ev_yg2107_inc_100p, ev_yg2107_reg_ne.",
+    "Estimated survey house effects (logit scale, median): morning_consult +0.049; yougov_economist -0.049. Spread 0.098 logits ~ 2.5 points at the midpoint -- instrument effect, removed from the population estimate.",
+    "Between-level SD for census_region: 0.102 logits (median posterior).",
+    "Between-level SD for income_band: 0.038 logits (median posterior).",
+    "No usable evidence on: household_type. These dimensions are EXCLUDED from the model rather than imputed, and groups defined on them report insufficient_evidence.",
     "Policy is outside the evidence base: nearest known policy is 'Expanded Child Tax Credit (2021)' at normalised lever distance 4.596 (threshold 1.5). No support estimate is produced."
   ],
   "induced_consumption_usd": {
     "baseline": 0.0,
-    "median": 64023816549.12507,
-    "p05": 40976666298.27099,
-    "p95": 87022643495.18512
+    "median": 61462468201.16722,
+    "p05": 30348818406.898796,
+    "p95": 92510885500.41887
   },
   "in_support": false,
   "nearest_policies": [
