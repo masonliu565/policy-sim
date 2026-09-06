@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "id": "nyc-universal-pre-k",
+  "name": "New York City Pre-K for All",
+  "jurisdiction": "New York City",
+  "cutoffDate": "2014-06-30",
+  "policyKind": "universal_pre_k",
+  "modelStatus": "evaluation_only",
+  "executionNotes": "Requires NYC child-capacity and maternal labor-force population builders; the later restricted-data estimate is an evaluation target, not a directly reproducible public-data outcome.",
+  "forecastQuestion": "Before the first expansion year, how quickly would full-day pre-K enrollment scale and what later change in maternal labor-force participation would be consistent with the rollout?",
+  "summary": "Forecast capacity, enrollment, and maternal labor-force response before the first expansion school year.",
+  "sources": [
+    {
+      "id": "nyc-prek-plan",
+      "title": "Ready to Launch: NYC's Implementation Plan for Free, High-Quality, Full-Day Universal Pre-Kindergarten",
+      "url": "https://www.nyc.gov/assets/home/downloads/pdf/reports/2014/Ready-to-Launch-NYCs-Implementation-Plan-for-Free-High-Quality-Full-Day-Universal-Pre-Kindergarten.pdf",
+      "publishedAt": "2014-01-27",
+      "role": "input",
+      "evidenceClass": "policy_plan",
+      "locator": "Implementation timeline, enrollment targets, and provider-capacity plan"
+    },
+    {
+      "id": "nyc-social-indicators-2016",
+      "title": "NYC Social Indicators Report",
+      "url": "https://www.nyc.gov/assets/ymi/downloads/pdf/Social-Indicators-Report-April-2016.pdf",
+      "publishedAt": "2016-04-01",
+      "role": "outcome",
+      "evidenceClass": "administrative_report",
+      "locator": "Section 2, page 29: over 53,000 enrolled in year one and 68,500 by fall 2015"
+    },
+    {
+      "id": "census-nyc-prek-2025",
+      "title": "Kids to School and Moms to Work",
+      "url": "https://www.census.gov/library/working-papers/2025/adrm/CES-WP-25-62.html",
+      "publishedAt": "2025-09-01",
+      "role": "outcome",
+      "evidenceClass": "quasi_experimental_evaluation",
+      "locator": "Abstract: triple-difference estimate of a 5 percentage-point increase"
+    }
+  ],
+  "targets": [
+    {
+      "id": "enrollment_2014",
+      "label": "Full-day pre-K enrollment",
+      "unit": "children",
+      "window": "2014-2015 school year",
+      "observation": {
+        "kind": "point",
+        "value": 53000,
+        "baselineValue": 19000
+      },
+      "sourceId": "nyc-social-indicators-2016",
+      "weight": 1,
+      "notes": "Rounded administrative enrollment."
+    },
+    {
+      "id": "enrollment_2015",
+      "label": "Full-day pre-K enrollment",
+      "unit": "children",
+      "window": "2015-2016 school year",
+      "observation": {
+        "kind": "point",
+        "value": 68500,
+        "baselineValue": 19000
+      },
+      "sourceId": "nyc-social-indicators-2016",
+      "weight": 1,
+      "notes": "Rounded administrative enrollment."
+    },
+    {
+      "id": "maternal_labor_force_pp",
+      "label": "Maternal labor-force participation effect",
+      "unit": "percentage_points",
+      "window": "2014 through 2017",
+      "observation": {
+        "kind": "point",
+        "value": 5,
+        "baselineValue": 0
+      },
+      "sourceId": "census-nyc-prek-2025",
+      "weight": 1,
+      "notes": "Triple-difference estimate, not a raw before-after change."
+    }
+  ],
+  "confounds": [
+    "The expansion occurred in two phases.",
+    "Public ACS geography and preschool detail limit exact independent replication.",
+    "The maternal-employment estimate uses restricted Census data."
+  ],
+  "evaluationDesign": "Administrative enrollment backtest plus a later triple-difference labor-force estimate.",
+  "dataAvailability": "mixed",
+  "verification": {
+    "checkedOn": "2026-09-06",
+    "method": "Every source URL was fetched and compared against the document it claims to be, and every scored figure was looked for in the source it cites.",
+    "status": "verified",
+    "sourcesVerified": 3,
+    "sourcesTotal": 3,
+    "figuresConfirmed": 3,
+    "figuresTotal": 3,
+    "findings": [
+      "Every source resolved and every figure was found verbatim, with correct page numbers. Enrollment 53,000 and 68,500 are on page 29 of the NYC Social Indicators Report; the 5 percentage point maternal labour force effect is the abstract of Census working paper CES-25-62."
+    ]
+  }
+}

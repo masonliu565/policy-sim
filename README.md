@@ -112,6 +112,33 @@ not coordinates typed from memory. Regenerate with:
 python model/build_us_outline.py
 ```
 
+### Historical benchmarks, and what we checked
+
+Six historical policy cases came in from the atlas repo's benchmark branch —
+DC's bag fee and paid family leave, NYC pre-K, Seattle's minimum wage, Stockton
+SEED, ACA Medicaid expansion. Each carries the question, the outcome that
+actually happened, and the confounds, with a cutoff date separating pre-policy
+inputs from post-policy outcomes.
+
+They were machine-generated, so **every source URL was fetched and every scored
+figure looked for in the document it cites** before any of it was imported.
+16 sources, 23 figures; 14 and 20 held up. Nothing was wholesale invented, and
+the hardest figures to fake matched verbatim. But `dc-disposable-bag-fee`
+carried **one fabricated target** — 80% of residents carrying reusable bags,
+citing a DOEE release that contains no reusable-bag statistic at all, with a
+value duplicating its sibling target. It was removed rather than corrected.
+And `aca-medicaid-expansion` reads four decimals off an **unlabelled bar
+chart**, one of which fails the chart's own consistency check, so it is kept as
+documentation and blocked for scoring.
+
+Full ledger, including the 404'd statute URL and two misattributed sources:
+**[docs/benchmarks.md](docs/benchmarks.md)**. Held in place by
+`dc_api/test_benchmarks.py`.
+
+The same branch also rewires the atlas chat to a Node + Postgres + OpenAI
+service instead of this one. That was not taken, and the atlas is pinned in
+`dc_api/setup_frontend.sh` so it cannot arrive through a pull.
+
 ### The DC atlas front end
 
 There is a second way to run this. [kp224/simcity](https://github.com/kp224/simcity)
@@ -333,7 +360,7 @@ recomputation from the cache, and the unanswerable question stays unanswered.
 ### Checks
 
 ```bash
-python -m pytest app/tests dc_api -q   # 134 tests
+python -m pytest app/tests dc_api -q   # 158 tests
 python app/tests/smoke_demo.py      # drives the running app in a browser
 python model/diagnostics.py         # 25 engine invariants + MCMC convergence
 bash model/reproduce.sh             # rebuild every artefact from raw PUMS

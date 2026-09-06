@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "id": "stockton-seed",
+  "name": "Stockton Economic Empowerment Demonstration",
+  "jurisdiction": "Stockton, California",
+  "cutoffDate": "2019-01-31",
+  "policyKind": "guaranteed_income",
+  "modelStatus": "evaluation_only",
+  "executionNotes": "The household-benefit model can estimate reach and cost but does not model employment; a randomized treatment/control employment adapter is required.",
+  "forecastQuestion": "Before payments began, how would one year of unconditional $500 monthly transfers affect full-time employment among recipients relative to controls?",
+  "summary": "Forecast first-year employment response to an unconditional $500 monthly transfer in a randomized city pilot.",
+  "sources": [
+    {
+      "id": "seed-design",
+      "title": "Stockton Economic Empowerment Demonstration design",
+      "url": "https://www.stocktondemonstration.org/about",
+      "publishedAt": "2019-01-01",
+      "role": "input",
+      "evidenceClass": "program_design",
+      "locator": "Program design: 125 recipients, $500 monthly, 24-month duration"
+    },
+    {
+      "id": "seed-employment",
+      "title": "SEED employment findings",
+      "url": "https://www.stocktondemonstration.org/key-findings/income-volatility-33dhg-ey29c",
+      "publishedAt": "2021-03-01",
+      "role": "outcome",
+      "evidenceClass": "randomized_evaluation",
+      "locator": "First-year employment findings: treatment 28% to 40%; control 32% to 37%"
+    }
+  ],
+  "targets": [
+    {
+      "id": "recipient_full_time_employment",
+      "label": "Recipient full-time employment",
+      "unit": "percent",
+      "window": "February 2020",
+      "observation": {
+        "kind": "point",
+        "value": 40,
+        "baselineValue": 28
+      },
+      "sourceId": "seed-employment",
+      "weight": 1,
+      "notes": "Treatment-group descriptive change."
+    },
+    {
+      "id": "control_full_time_employment",
+      "label": "Control full-time employment",
+      "unit": "percent",
+      "window": "February 2020",
+      "observation": {
+        "kind": "point",
+        "value": 37,
+        "baselineValue": 32
+      },
+      "sourceId": "seed-employment",
+      "weight": 1,
+      "notes": "Control-group descriptive change."
+    }
+  ],
+  "confounds": [
+    "The treatment group contained only 125 recipients.",
+    "The first-year window ends as the COVID-19 pandemic begins.",
+    "Pilot estimates should not be extrapolated directly to a citywide permanent program."
+  ],
+  "evaluationDesign": "Randomized controlled pilot with treatment and control outcomes; external-validity stress test.",
+  "dataAvailability": "public_aggregate",
+  "verification": {
+    "checkedOn": "2026-09-06",
+    "method": "Every source URL was fetched and compared against the document it claims to be, and every scored figure was looked for in the source it cites.",
+    "status": "verified",
+    "sourcesVerified": 2,
+    "sourcesTotal": 2,
+    "figuresConfirmed": 2,
+    "figuresTotal": 2,
+    "findings": [
+      "Both employment figures are verbatim on the SEED findings page: recipients 28 percent to 40 percent full-time over the year, control 32 percent to 37 percent. The design (125 residents, $500 a month, 24 months) matches the locator word for word."
+    ]
+  }
+}

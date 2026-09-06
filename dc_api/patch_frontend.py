@@ -117,8 +117,14 @@ def main(root: Path) -> int:
                 continue                      # already applied
             if old not in text:
                 print(f"ERROR: {name} no longer contains the line this patch "
-                      f"expects. Upstream changed; re-read it before forcing.\n"
-                      f"  wanted: {old[:80]}...")
+                      f"expects.\n"
+                      f"  wanted: {old[:80]}...\n"
+                      f"  The atlas is pinned in dc_api/setup_frontend.sh. If "
+                      f"the pin moved, read the new upstream file before "
+                      f"re-pointing this patch at it -- in particular check "
+                      f"that chat.ts still POSTs to /api/v1/query, because an "
+                      f"upstream branch exists that points it at a different "
+                      f"service entirely.")
                 return 1
             text = text.replace(old, new, 1)
         if text != before:

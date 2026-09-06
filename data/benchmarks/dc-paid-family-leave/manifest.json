@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "id": "dc-paid-family-leave",
+  "name": "District of Columbia Paid Family Leave",
+  "jurisdiction": "District of Columbia",
+  "cutoffDate": "2019-06-30",
+  "policyKind": "paid_leave",
+  "modelStatus": "metric_adapter_ready",
+  "executionNotes": "Executable with the frozen 2018 ACS DC/MD/VA place-of-work snapshots and reviewed pre-cutoff scenario. The population represents private employees in those three origins who report working in DC; smaller commuter origins and the statute's exact work-time test are not directly represented, so retrospective runs are methodology diagnostics rather than fresh validation.",
+  "forecastQuestion": "Before tax collection began, how many total, parental, medical, and family claims would DC Paid Family Leave receive in its first operating year?",
+  "summary": "Forecast claims and program operations immediately before employer tax collection began, using the enacted policy and only evidence available by the cutoff.",
+  "sources": [
+    {
+      "id": "dc-pfl-law",
+      "title": "Universal Paid Leave Amendment Act",
+      "url": "https://code.dccouncil.gov/us/dc/council/code/titles/32/chapters/5/subchapters/IV",
+      "publishedAt": "2017-04-07",
+      "role": "input",
+      "evidenceClass": "policy_rule",
+      "locator": "Subchapter IV-A, especially §§ 32-541.03 through 32-541.08",
+      "_fix": "URL repaired: subchapter IV-A returned 404 and does not exist; the provisions cited in the locator (SS 32-541.03 to 32-541.08) are in subchapter IV."
+    },
+    {
+      "id": "dc-pfl-2015-simulation",
+      "title": "Final Report on the Costs and Benefits of Paid Family and Medical Leave in the District of Columbia",
+      "url": "https://does.dc.gov/sites/default/files/dc/sites/does/release_content/attachments/Final%20Report%20Paid%20Family%20Leave%20in%20DC%2012Nov2015%20GC%5B1%5D.pdf",
+      "publishedAt": "2015-11-12",
+      "role": "input",
+      "evidenceClass": "published_model",
+      "locator": "Executive summary and simulation methodology",
+      "author": "Jeffrey Hayes, Institute for Women's Policy Research",
+      "_fix": "Title and authorship restored from the document itself."
+    },
+    {
+      "id": "dc-pfl-fy21-q4",
+      "title": "DC Paid Family Leave FY2021 Q4 Report",
+      "url": "https://does.dc.gov/sites/default/files/dc/sites/does/publication/attachments/DOES%20-%20Paid%20Family%20Leave%20FY21%20Q4%20Report_.pdf",
+      "publishedAt": "2021-10-01",
+      "role": "outcome",
+      "evidenceClass": "administrative_report",
+      "locator": "PFL Claim Type table: 8,430 parental; 2,901 medical; 848 family; 12,179 total"
+    }
+  ],
+  "targets": [
+    {
+      "id": "claims",
+      "label": "Claims received",
+      "unit": "claims",
+      "window": "2020-07-01 through 2021-08-02",
+      "observation": {
+        "kind": "point",
+        "value": 12179
+      },
+      "sourceId": "dc-pfl-fy21-q4",
+      "weight": 1,
+      "notes": "Claims received, not approved recipients."
+    },
+    {
+      "id": "parental_claims",
+      "label": "Parental claims received",
+      "unit": "claims",
+      "window": "2020-07-01 through 2021-08-02",
+      "observation": {
+        "kind": "point",
+        "value": 8430
+      },
+      "sourceId": "dc-pfl-fy21-q4",
+      "weight": 1,
+      "notes": "Administrative claim type count."
+    },
+    {
+      "id": "medical_claims",
+      "label": "Medical claims received",
+      "unit": "claims",
+      "window": "2020-07-01 through 2021-08-02",
+      "observation": {
+        "kind": "point",
+        "value": 2901
+      },
+      "sourceId": "dc-pfl-fy21-q4",
+      "weight": 1,
+      "notes": "Administrative claim type count."
+    },
+    {
+      "id": "family_claims",
+      "label": "Family claims received",
+      "unit": "claims",
+      "window": "2020-07-01 through 2021-08-02",
+      "observation": {
+        "kind": "point",
+        "value": 848
+      },
+      "sourceId": "dc-pfl-fy21-q4",
+      "weight": 1,
+      "notes": "Administrative claim type count."
+    }
+  ],
+  "confounds": [
+    "Benefits launched during the COVID-19 public health emergency.",
+    "The outcome window is approximately thirteen months rather than a standard program year.",
+    "Claims received are not identical to approved or paid claims."
+  ],
+  "evaluationDesign": "Prospective forecast compared with later administrative counts; descriptive backtest, not a causal effect estimate.",
+  "dataAvailability": "mixed",
+  "verification": {
+    "checkedOn": "2026-09-06",
+    "method": "Every source URL was fetched and compared against the document it claims to be, and every scored figure was looked for in the source it cites.",
+    "status": "verified_with_fixes",
+    "sourcesVerified": 2,
+    "sourcesTotal": 3,
+    "figuresConfirmed": 4,
+    "figuresTotal": 4,
+    "findings": [
+      "Claim counts 8,430 parental, 2,901 medical, 848 family and 12,179 total are exact, from Table 1 of the DOES FY21 Q4 report, and the manifest's window matches the report's own framing.",
+      "The statute URL returned 404 and was repaired: the Universal Paid Leave provisions are in subchapter IV, not IV-A.",
+      "The 2015 study's authorship was restored: Jeffrey Hayes, Institute for Women's Policy Research."
+    ]
+  }
+}

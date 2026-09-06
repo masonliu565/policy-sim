@@ -16,6 +16,14 @@ set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEST="$REPO/frontend"
 UPSTREAM="https://github.com/kp224/simcity"
+# Pinned deliberately. The atlas's chat panel is what talks to our service, and
+# an upstream branch exists (codex/dc-policy-sandbox-benchmarks) that rewrites
+# it to POST /api/v1/sandbox/agent-runs against a Node + Postgres + OpenAI
+# service instead of /api/v1/query against this one. Merged upstream and pulled
+# blind, that would disconnect the Python backend and every number in it, and
+# the app would look like it works right up until it asked for an OpenAI key.
+# Move this pin deliberately, run the patch script, and run the tests.
+UPSTREAM_COMMIT="bf1e13d6d30830f1f6ad26393566e226e8e67125"
 
 command -v node >/dev/null || { echo "ERROR: node is required (v20+)."; exit 1; }
 if ! command -v pnpm >/dev/null; then
@@ -24,13 +32,16 @@ if ! command -v pnpm >/dev/null; then
 fi
 
 if [ -d "$DEST/.git" ]; then
-  echo ">>> updating $DEST"
-  git -C "$DEST" pull --ff-only
+  echo ">>> fetching $UPSTREAM_COMMIT into $DEST"
+  git -C "$DEST" fetch -q origin
 else
   echo ">>> cloning $UPSTREAM into $DEST"
   rm -rf "$DEST"
-  git clone --depth 1 "$UPSTREAM" "$DEST"
+  git clone -q "$UPSTREAM" "$DEST"
 fi
+echo ">>> checking out the pinned commit"
+git -C "$DEST" checkout -q "$UPSTREAM_COMMIT"
+git -C "$DEST" --no-pager log --oneline -1
 
 # One patch, applied here rather than vendored: the atlas's breakdown table
 # hardcodes health-survey column headers, and our policy answers put subgroup

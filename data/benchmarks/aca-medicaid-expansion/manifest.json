@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "id": "aca-medicaid-expansion",
+  "name": "2014 ACA Medicaid Expansion",
+  "jurisdiction": "United States expansion states",
+  "cutoffDate": "2013-12-31",
+  "policyKind": "coverage_expansion",
+  "modelStatus": "documentation_only",
+  "executionNotes": "Requires a multi-state insurance-coverage population builder and explicit expansion/non-expansion comparison model.",
+  "forecastQuestion": "How would the uninsured rate among working-age adults below poverty change in Medicaid-expansion states relative to non-expansion states in 2014?",
+  "summary": "Forecast insurance coverage changes for low-income working-age adults while retaining non-expansion states as a comparison group.",
+  "sources": [
+    {
+      "id": "aca-statute",
+      "title": "Patient Protection and Affordable Care Act",
+      "url": "https://www.congress.gov/111/plaws/publ148/PLAW-111publ148.pdf",
+      "publishedAt": "2010-03-23",
+      "role": "input",
+      "evidenceClass": "policy_rule",
+      "locator": "Title II Medicaid eligibility provisions"
+    },
+    {
+      "id": "census-health-2014",
+      "title": "Health Insurance Coverage in the United States: 2014",
+      "url": "https://www.census.gov/content/dam/Census/library/publications/2015/demo/p60-253.pdf",
+      "publishedAt": "2015-09-01",
+      "role": "outcome",
+      "evidenceClass": "population_survey",
+      "locator": "Figure 5, page 14: uninsured rate by poverty and expansion status"
+    }
+  ],
+  "targets": [
+    {
+      "id": "expansion_below_poverty_uninsured",
+      "label": "Uninsured rate below poverty in expansion states",
+      "unit": "percent",
+      "window": "2014",
+      "observation": {
+        "kind": "point",
+        "value": 25.5,
+        "baselineValue": 34.8
+      },
+      "sourceId": "census-health-2014",
+      "weight": 1,
+      "notes": "ACS estimate for adults aged 19-64."
+    },
+    {
+      "id": "nonexpansion_below_poverty_uninsured",
+      "label": "Uninsured rate below poverty in non-expansion states",
+      "unit": "percent",
+      "window": "2014",
+      "observation": {
+        "kind": "point",
+        "value": 38.4,
+        "baselineValue": 43
+      },
+      "sourceId": "census-health-2014",
+      "weight": 1,
+      "notes": "Comparison outcome; marketplaces and other ACA provisions also changed."
+    }
+  ],
+  "confounds": [
+    "Insurance marketplaces and other ACA provisions began at the same time.",
+    "States selected whether and when to expand.",
+    "ACS coverage is self-reported and differs from CMS enrollment definitions."
+  ],
+  "evaluationDesign": "Expansion/non-expansion comparative backtest using ACS survey estimates; raw before-after changes are not treated as Medicaid-only causal effects.",
+  "dataAvailability": "public_microdata",
+  "scoringBlocked": true,
+  "verification": {
+    "checkedOn": "2026-09-06",
+    "method": "Every source URL was fetched and compared against the document it claims to be, and every scored figure was looked for in the source it cites.",
+    "status": "blocked_for_scoring",
+    "sourcesVerified": 2,
+    "sourcesTotal": 2,
+    "figuresConfirmed": 2,
+    "figuresTotal": 4,
+    "findings": [
+      "Both sources are genuine: Public Law 111-148 and Census P60-253, and Figure 5 is on the cited page.",
+      "But none of the four values appear as text anywhere in the report. Figure 5 is an unlabelled bar chart, and the figures were obtained by measuring bar heights. Two check out (34.8 and 25.5). The 43.0 baseline measures about 43.3 and contradicts the chart's own difference panel, which shows roughly 4.8 points against the 4.6 the manifest implies; 38.4 measures about 38.47.",
+      "Kept as documentation. Not usable for scoring a forecast until the values are re-derived from a source that states them in text."
+    ]
+  }
+}

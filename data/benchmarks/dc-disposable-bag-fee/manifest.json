@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "id": "dc-disposable-bag-fee",
+  "name": "DC Disposable Bag Fee",
+  "jurisdiction": "District of Columbia",
+  "cutoffDate": "2009-12-31",
+  "policyKind": "disposable_bag_fee",
+  "modelStatus": "metric_adapter_ready",
+  "executionNotes": "The executable adapter freezes a 2008 ACS housing snapshot and uses only the enacted fee, the pre-launch fiscal note, and explicit uncertainty ranges. The 2010 administrative totals and 2013 resident survey remain outside the simulation and enter only during scoring. Because those outcomes were inspected while this adapter was built, every run is permanently labeled retrospective_diagnostic.",
+  "forecastQuestion": "Given a five-cent fee on covered disposable carryout bags beginning in 2010, how many bags and how much District revenue would the program record in its first year, and what household behavior would be visible after three years?",
+  "summary": "Tests whether a household-weighted fee-response model can reproduce DC's first-year administrative bag volume and receipts and its later self-reported behavior change without passing those outcomes into the simulation.",
+  "sources": [
+    {
+      "id": "dc-bag-law-18-55",
+      "title": "Anacostia River Clean Up and Protection Act of 2009",
+      "url": "https://code.dccouncil.gov/us/dc/council/laws/18-55",
+      "publishedAt": "2009-09-23",
+      "role": "input",
+      "evidenceClass": "enacted_law",
+      "locator": "D.C. Law 18-55; enactment history and five-cent disposable carryout bag fee provisions."
+    },
+    {
+      "id": "dc-bag-fee-fis-2009",
+      "title": "OCFO Fiscal Impact Statement — Anacostia River Cleanup and Protection Act of 2009",
+      "url": "https://app.cfo.dc.gov/services/fiscal_impact/pdf/spring09/Final-Anacostia-River-Cleanup-and-Protection-Act-of-2009.pdf",
+      "publishedAt": "2009-05-14",
+      "role": "input",
+      "evidenceClass": "official_pre_policy_forecast",
+      "locator": "Table 1 and background: projected FY2010 revenue, five-cent fee, retailer retention, and estimated covered retailers."
+    },
+    {
+      "id": "la-dpw-dc-bag-admin-2010",
+      "title": "Economic Impact Analysis: Proposed Ban on Plastic Carryout Bags in Los Angeles County",
+      "url": "https://ladpw.org/epd/PlasticBags/PDF/SocioEconomicImpactStudy_final.pdf",
+      "publishedAt": "2010-11-03",
+      "role": "outcome",
+      "evidenceClass": "consultant_report_citing_dc_administrative_data",
+      "locator": "Table 16: DC 2010 estimated annual bag use, receipts, pre-policy annual bags, and percentage reduction, sourced to DC CFO administrative information.",
+      "author": "AECOM Technical Services, prepared for Sapphos Environmental",
+      "_fix": "Title, authorship and evidence class corrected. The manifest described this as a government report; it is a consultant report hosted on the LA County DPW site. It does cite DC CFO administrative data, and the figures taken from it were confirmed."
+    },
+    {
+      "id": "dc-doee-bag-survey-2013",
+      "title": "District Bag Law Survey Results",
+      "url": "https://doee.dc.gov/release/new-survey-data-shows-district%E2%80%99s-bag-law-working",
+      "publishedAt": "2014-01-07",
+      "role": "outcome",
+      "evidenceClass": "official_household_and_business_survey",
+      "locator": "Resident survey findings: 80 percent reported reducing disposable-bag use and 80 percent carried reusable bags at least some of the time."
+    }
+  ],
+  "targets": [
+    {
+      "id": "first_year_disposable_bags",
+      "label": "Covered disposable bags in first year",
+      "unit": "bags/year",
+      "window": "2010 annualized administrative estimate",
+      "observation": {
+        "kind": "point",
+        "value": 59568000
+      },
+      "sourceId": "la-dpw-dc-bag-admin-2010",
+      "weight": 1,
+      "notes": "Administrative volume inferred from remitted fees for covered paper and plastic bags; it is not household survey consumption."
+    },
+    {
+      "id": "first_year_bag_volume_reduction",
+      "label": "First-year reduction from pre-policy bag volume",
+      "unit": "share",
+      "window": "2010 relative to the report's 270 million pre-policy baseline",
+      "observation": {
+        "kind": "point",
+        "value": 0.78,
+        "baselineValue": 0
+      },
+      "sourceId": "la-dpw-dc-bag-admin-2010",
+      "weight": 1,
+      "notes": "Report-level estimate based on the administrative volume and a stated 270 million bag baseline."
+    },
+    {
+      "id": "first_year_bag_fee_revenue",
+      "label": "First-year District bag-fee receipts",
+      "unit": "USD/year",
+      "window": "2010 annualized administrative estimate",
+      "observation": {
+        "kind": "point",
+        "value": 2382571.2
+      },
+      "sourceId": "la-dpw-dc-bag-admin-2010",
+      "weight": 1,
+      "notes": "District receipts use four cents per covered bag after the standard one-cent retailer retention."
+    },
+    {
+      "id": "three_year_residents_reducing_bag_use",
+      "label": "Residents reporting reduced disposable-bag use",
+      "unit": "share",
+      "window": "2013 resident survey",
+      "observation": {
+        "kind": "point",
+        "value": 0.8
+      },
+      "sourceId": "dc-doee-bag-survey-2013",
+      "weight": 1,
+      "notes": "Self-reported change among surveyed residents; no randomized or untreated comparison group."
+    }
+  ],
+  "confounds": [
+    "The administrative volume covers fee-paying bags reported by covered retailers and can shift with retailer reporting, exemptions, enforcement, and sales volume.",
+    "The 270 million pre-policy bag baseline is an estimate rather than an independently reproduced administrative count.",
+    "The 2013 resident survey is self-reported, uses recalled pre-policy behavior for some comparisons, and has no untreated DC control group.",
+    "Administrative bag counts and household survey responses describe different universes, so agreement across those metrics is not a causal identification strategy.",
+    "Paper-plastic substitution, reusable-bag purchases, litter, water quality, retailer costs, and distributional burden are outside the scored targets.",
+    "Table 16's volume column is headed 'Plastic Bags (est.)', while this manifest describes the target as covered paper and plastic bags. The scope of the administrative figure may be narrower than the policy's coverage."
+  ],
+  "evaluationDesign": "Descriptive forecast backtest. A pre-policy parameterization produces metric distributions from a frozen ACS housing population; later aggregate administrative and survey observations are scored at the metric level. The design assesses numerical alignment and evidence discipline, not the causal effect of the fee.",
+  "dataAvailability": "mixed",
+  "verification": {
+    "checkedOn": "2026-09-06",
+    "method": "Every source URL was fetched and compared against the document it claims to be, and every scored figure was looked for in the source it cites.",
+    "status": "verified_with_removal",
+    "sourcesVerified": 3,
+    "sourcesTotal": 4,
+    "figuresConfirmed": 4,
+    "figuresTotal": 5,
+    "removedTargets": [
+      {
+        "id": "three_year_reusable_bag_household_share",
+        "claimed": 0.8,
+        "reason": "FABRICATED. The locator asserts the 2013 DOEE release reports 80 percent of residents carrying reusable bags at least some of the time. The release contains no reusable-bag statistic at all; the value duplicates the sibling target's 0.80. A figure of 79 percent circulates elsewhere and was not confirmed either, so the target is removed rather than corrected."
+      }
+    ],
+    "findings": [
+      "The administrative figures are exact and are the hardest kind to fake: 59,568,000 bags and $2,382,571.20 of receipts are verbatim in Table 16, along with the 270 million pre-policy baseline and the 78 percent reduction.",
+      "The source is a consultant report (AECOM for Sapphos Environmental) hosted by LA County, not a government report; its evidence class was corrected.",
+      "Table 16's column is headed 'Plastic Bags (est.)' while the manifest describes covered paper and plastic bags. Recorded as a confound."
+    ]
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "id": "seattle-minimum-wage",
+  "name": "Seattle Minimum Wage Ordinance",
+  "jurisdiction": "Seattle, Washington",
+  "cutoffDate": "2015-03-31",
+  "policyKind": "minimum_wage",
+  "modelStatus": "evaluation_only",
+  "executionNotes": "Requires longitudinal wage, hours, and employment data plus a documented comparison-group design; public ACS alone cannot reproduce the held-out study.",
+  "forecastQuestion": "Before Seattle's first wage step, what directions should the system predict for hourly wages and hours among low-wage workers, and how uncertain should it be?",
+  "summary": "Forecast wage, hours, earnings, and employment responses before the first phase took effect; use as an ambiguity and model-risk test.",
+  "sources": [
+    {
+      "id": "seattle-ordinance-124490",
+      "title": "Seattle Ordinance 124490",
+      "url": "https://clerk.seattle.gov/~archives/Ordinances/Ord_124490.pdf",
+      "publishedAt": "2014-06-03",
+      "role": "input",
+      "evidenceClass": "policy_rule",
+      "locator": "Sections establishing the phased wage schedules and employer categories"
+    },
+    {
+      "id": "dol-clear-seattle",
+      "title": "CLEAR review of Seattle minimum-wage evaluation",
+      "url": "https://beta.dol.gov/research-data/clear/studies/minimum-wage-increases-and-low-wage-employment-evidence-seattle-jardim-et-al-2022",
+      "publishedAt": "2022-05-01",
+      "role": "outcome",
+      "evidenceClass": "evidence_quality_review",
+      "locator": "Highlights, findings, and Low Causal Evidence rating"
+    }
+  ],
+  "targets": [
+    {
+      "id": "wages_direction",
+      "label": "Low-wage workers' hourly wages",
+      "unit": "direction",
+      "window": "2015-2016 phase-in",
+      "observation": {
+        "kind": "direction",
+        "value": "up"
+      },
+      "sourceId": "dol-clear-seattle",
+      "weight": 1,
+      "notes": "Direction only because magnitudes depend strongly on study design."
+    },
+    {
+      "id": "hours_direction",
+      "label": "Low-wage workers' hours",
+      "unit": "direction",
+      "window": "2015-2016 phase-in",
+      "observation": {
+        "kind": "direction",
+        "value": "down"
+      },
+      "sourceId": "dol-clear-seattle",
+      "weight": 1,
+      "notes": "CLEAR rates the causal evidence low."
+    }
+  ],
+  "confounds": [
+    "Seattle's economy and labor market were changing rapidly.",
+    "Comparison-group construction is contested.",
+    "Published evaluations use different worker and firm samples and reach different magnitudes."
+  ],
+  "evaluationDesign": "Adversarial evidence-discipline benchmark; disagreement and low causal confidence are expected outputs, not failures.",
+  "dataAvailability": "restricted_microdata",
+  "verification": {
+    "checkedOn": "2026-09-06",
+    "method": "Every source URL was fetched and compared against the document it claims to be, and every scored figure was looked for in the source it cites.",
+    "status": "verified",
+    "sourcesVerified": 2,
+    "sourcesTotal": 2,
+    "figuresConfirmed": 2,
+    "figuresTotal": 2,
+    "findings": [
+      "The ordinance and the DOL CLEAR review both resolved, and the direction-only targets (wages up, hours down) match the review, as does its low causal evidence rating. Recording directions rather than magnitudes is the right call here: the Seattle literature disagrees on magnitude."
+    ]
+  }
+}
