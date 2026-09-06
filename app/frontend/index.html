@@ -10,7 +10,7 @@
     transition: background .45s ease, color .45s ease;
   }
   #wrap { display: flex; gap: var(--pad); padding: var(--pad); height: 100vh; }
-  #mapcol { flex: 0 0 65%; position: relative; border-radius: 12px; overflow: hidden;
+  #mapcol { flex: 0 0 65%; align-self: flex-start; position: relative; border-radius: 12px; overflow: hidden;
             background: var(--ocean); border: 1px solid var(--edge); }
   #side   { flex: 1 1 35%; display: flex; flex-direction: column; gap: 10px;
             overflow-y: auto; }
@@ -177,7 +177,10 @@ function relief(gx, gy) {
 }
 
 function buildTiles() {
-  const b = CFG.bounds, tx = CFG.tile, ty = CFG.tile_y;
+  // One step for both axes. CFG.tile is already cosine-corrected, so an equal
+  // step in x and y gives geographically square cells; using CFG.tile_y for y
+  // stretched the landmass north-south and made the projection unreadable.
+  const b = CFG.bounds, tx = CFG.tile, ty = CFG.tile;
   const nx = Math.ceil((b.x1 - b.x0) / tx), ny = Math.ceil((b.y1 - b.y0) / ty);
   const tiles = [];
   for (let iy = 0; iy <= ny; iy++) {
@@ -194,7 +197,7 @@ function buildTiles() {
 }
 
 function lonlatToGrid(x, y) {
-  const b = CFG.bounds, tx = CFG.tile, ty = CFG.tile_y;
+  const b = CFG.bounds, tx = CFG.tile, ty = CFG.tile;
   const ny = Math.ceil((b.y1 - b.y0) / ty);
   return [(x - b.x0) / tx, ny - (y - b.y0) / ty];
 }
@@ -256,6 +259,12 @@ function renderMap() {
   const m = 26;
   svg.setAttribute("viewBox", `${bb.x - m} ${bb.y - m} ${bb.width + 2 * m} ${bb.height + 2 * m}`);
   HOME = { x: bb.x - m, y: bb.y - m, w: bb.width + 2 * m, h: bb.height + 2 * m };
+
+  // Match the box to the drawn aspect. Left to fill the column, the map sat in
+  // a band of empty ocean roughly as tall as itself.
+  const col = document.getElementById("mapcol");
+  const aspect = HOME.w / HOME.h;
+  col.style.height = Math.round(col.clientWidth / aspect) + "px";
 
   cam.querySelectorAll(".marker").forEach((el) => {
     el.addEventListener("click", () => selectMetro(el.dataset.key,

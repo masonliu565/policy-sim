@@ -33,12 +33,23 @@ IMPACT_LABELS = {
 
 
 def _domain(values: List[float], pad: float = 0.14) -> List[float]:
+    """Padded display range.
+
+    Padding never crosses zero when the data does not: an annual cost padded
+    to -$23.6B spends half the axis on a region the quantity cannot occupy.
+    """
     lo, hi = min(values), max(values)
     if lo == hi:
         span = abs(lo) * 0.2 or 1.0
-        return [lo - span, hi + span]
-    span = (hi - lo) * pad
-    return [lo - span, hi + span]
+        out = [lo - span, hi + span]
+    else:
+        span = (hi - lo) * pad
+        out = [lo - span, hi + span]
+    if lo >= 0 and out[0] < 0:
+        out[0] = 0.0
+    if hi <= 0 and out[1] > 0:
+        out[1] = 0.0
+    return out
 
 
 def build_domains(scenario: Dict[str, Any]) -> Dict[str, List[float]]:
