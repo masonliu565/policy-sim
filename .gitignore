@@ -32,3 +32,8 @@ Thumbs.db
 
 # pytest
 .pytest_cache/
+
+# Browser-driver output. The scroll captures are working artefacts, not
+# deliverables; the three named screenshots below are kept as evidence.
+docs/screenshots/sec_*.png
+docs/screenshots/body_*.txt

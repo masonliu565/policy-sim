@@ -77,11 +77,11 @@
         "observed_n": 1998,
         "observed_se": 0.01118369684295292,
         "predicted": {
-          "median": 0.4602986545544905,
-          "p05": 0.40101827252638816,
-          "p95": 0.5001303465894623
+          "median": 0.46702801410231115,
+          "p05": 0.4261421258191596,
+          "p95": 0.5022531860722963
         },
-        "gap": -0.02970134544550951,
+        "gap": -0.02297198589768884,
         "observed_inside_interval": true
       },
       {
@@ -92,11 +92,11 @@
         "observed_n": 868,
         "observed_se": 0.016967711271896738,
         "predicted": {
-          "median": 0.4596854547611814,
-          "p05": 0.39856470168995,
-          "p95": 0.4977023026129226
+          "median": 0.46547678259593384,
+          "p05": 0.4235652174303713,
+          "p95": 0.5022648319130711
         },
-        "gap": -0.05031454523881862,
+        "gap": -0.04452321740406617,
         "observed_inside_interval": false
       },
       {
@@ -107,11 +107,11 @@
         "observed_n": 725,
         "observed_se": 0.018565819539476672,
         "predicted": {
-          "median": 0.4590124236501806,
-          "p05": 0.39955713170940665,
-          "p95": 0.4983175728500253
+          "median": 0.465672414278215,
+          "p05": 0.42385227057246255,
+          "p95": 0.5029283346729307
         },
-        "gap": -0.030987576349819412,
+        "gap": -0.024327585721785006,
         "observed_inside_interval": true
       },
       {
@@ -122,11 +122,11 @@
         "observed_n": 405,
         "observed_se": 0.02466566564535397,
         "predicted": {
-          "median": 0.4615955133692392,
-          "p05": 0.4029628449500011,
-          "p95": 0.502541560708923
+          "median": 0.4691073539012541,
+          "p05": 0.4287888267855867,
+          "p95": 0.5055085543930365
         },
-        "gap": 0.021595513369239205,
+        "gap": 0.029107353901254074,
         "observed_inside_interval": true
       },
       {
@@ -137,11 +137,11 @@
         "observed_n": 353,
         "observed_se": 0.026350223483310283,
         "predicted": {
-          "median": 0.4705646129612888,
-          "p05": 0.40776379374012073,
-          "p95": 0.5122232374546412
+          "median": 0.47814714624605614,
+          "p05": 0.43487629571392333,
+          "p95": 0.5136852698243808
         },
-        "gap": -0.09943538703871113,
+        "gap": -0.09185285375394381,
         "observed_inside_interval": false
       },
       {
@@ -152,11 +152,11 @@
         "observed_n": 444,
         "observed_se": 0.02342325017260945,
         "predicted": {
-          "median": 0.44843491291007176,
-          "p05": 0.38776577847774507,
-          "p95": 0.49031699175519755
+          "median": 0.4538246415531568,
+          "p05": 0.4104117748950063,
+          "p95": 0.4930402591115234
         },
-        "gap": 0.028434912910071775,
+        "gap": 0.03382464155315684,
         "observed_inside_interval": true
       },
       {
@@ -167,11 +167,11 @@
         "observed_n": 746,
         "observed_se": 0.018247626456985383,
         "predicted": {
-          "median": 0.45526604016860406,
-          "p05": 0.3945418717754238,
-          "p95": 0.4962361146337922
+          "median": 0.46124536356872037,
+          "p05": 0.419147313291206,
+          "p95": 0.4995484299617137
         },
-        "gap": -0.004733959831395962,
+        "gap": 0.001245363568720348,
         "observed_inside_interval": true
       },
       {
@@ -182,15 +182,15 @@
         "observed_n": 455,
         "observed_se": 0.023322865260427244,
         "predicted": {
-          "median": 0.47205747872071,
-          "p05": 0.4133349761159956,
-          "p95": 0.5152005748629487
+          "median": 0.4797978205679877,
+          "p05": 0.4379908564787682,
+          "p95": 0.5190376752863742
         },
-        "gap": -0.07794252127929002,
+        "gap": -0.07020217943201235,
         "observed_inside_interval": false
       }
     ],
-    "mean_absolute_gap": 0.042893220182856955,
+    "mean_absolute_gap": 0.03975689765407843,
     "method": "mrp",
     "holdout_group": "dec2021",
     "holdout": "Morning Consult/POLITICO #2112154, 18-20 Dec 2021",
@@ -204,9 +204,9 @@
       "21 record(s) about a different policy were excluded by policy_key. Pooling them into a 'ctc_2021' estimate would mix answers to different questions about different policies.",
       "MRP fitted on 64 crosstab observations for policy 'ctc_2021', across 2 dimension(s) (census_region, income_band), 2 survey house(s), 5 question wording(s) and 8 fielding date(s) (2021-02-20 to 2021-10-04). No MIN_EVIDENCE_N exclusion is applied; 8 thin record(s) are USED at reduced weight.",
       "Support is reported as of 2021-12-19, using the 'mc_monthly_payment_support' question wording.",
-      "Fitted time trend: -0.0510 logits/month [-0.0622, -0.0400]. Identified from repeated-wording waves; treat as an extrapolation outside the observed window.",
-      "Survey house effects (logit scale, median): morning_consult +0.037; yougov_economist -0.037. Spread 0.075 logits -- instrument effect, removed from the population estimate.",
-      "Between-wording SD: 0.287 logits. Between-level SD for census_region: 0.053; Between-level SD for income_band: 0.005",
+      "Fitted time trend: -0.0517 logits/month [-0.0626, -0.0406]. Identified from repeated-wording waves; treat as an extrapolation outside the observed window.",
+      "Survey house effects (logit scale, median): morning_consult +0.006; yougov_economist -0.006. Spread 0.013 logits -- instrument effect, removed from the population estimate.",
+      "Between-wording SD: 0.247 logits. Between-level SD for census_region: 0.053; Between-level SD for income_band: 0.005",
       "No usable evidence on: household_type. Excluded from the model rather than imputed; groups defined on them report insufficient_evidence."
     ]
   },
@@ -373,11 +373,11 @@
           "observed_n": 1998,
           "observed_se": 0.01118369684295292,
           "predicted": {
-            "median": 0.4602986545544905,
-            "p05": 0.40101827252638816,
-            "p95": 0.5001303465894623
+            "median": 0.46702801410231115,
+            "p05": 0.4261421258191596,
+            "p95": 0.5022531860722963
           },
-          "gap": -0.02970134544550951,
+          "gap": -0.02297198589768884,
           "observed_inside_interval": true
         },
         {
@@ -388,11 +388,11 @@
           "observed_n": 868,
           "observed_se": 0.016967711271896738,
           "predicted": {
-            "median": 0.4596854547611814,
-            "p05": 0.39856470168995,
-            "p95": 0.4977023026129226
+            "median": 0.46547678259593384,
+            "p05": 0.4235652174303713,
+            "p95": 0.5022648319130711
           },
-          "gap": -0.05031454523881862,
+          "gap": -0.04452321740406617,
           "observed_inside_interval": false
         },
         {
@@ -403,11 +403,11 @@
           "observed_n": 725,
           "observed_se": 0.018565819539476672,
           "predicted": {
-            "median": 0.4590124236501806,
-            "p05": 0.39955713170940665,
-            "p95": 0.4983175728500253
+            "median": 0.465672414278215,
+            "p05": 0.42385227057246255,
+            "p95": 0.5029283346729307
           },
-          "gap": -0.030987576349819412,
+          "gap": -0.024327585721785006,
           "observed_inside_interval": true
         },
         {
@@ -418,11 +418,11 @@
           "observed_n": 405,
           "observed_se": 0.02466566564535397,
           "predicted": {
-            "median": 0.4615955133692392,
-            "p05": 0.4029628449500011,
-            "p95": 0.502541560708923
+            "median": 0.4691073539012541,
+            "p05": 0.4287888267855867,
+            "p95": 0.5055085543930365
           },
-          "gap": 0.021595513369239205,
+          "gap": 0.029107353901254074,
           "observed_inside_interval": true
         },
         {
@@ -433,11 +433,11 @@
           "observed_n": 353,
           "observed_se": 0.026350223483310283,
           "predicted": {
-            "median": 0.4705646129612888,
-            "p05": 0.40776379374012073,
-            "p95": 0.5122232374546412
+            "median": 0.47814714624605614,
+            "p05": 0.43487629571392333,
+            "p95": 0.5136852698243808
           },
-          "gap": -0.09943538703871113,
+          "gap": -0.09185285375394381,
           "observed_inside_interval": false
         },
         {
@@ -448,11 +448,11 @@
           "observed_n": 444,
           "observed_se": 0.02342325017260945,
           "predicted": {
-            "median": 0.44843491291007176,
-            "p05": 0.38776577847774507,
-            "p95": 0.49031699175519755
+            "median": 0.4538246415531568,
+            "p05": 0.4104117748950063,
+            "p95": 0.4930402591115234
           },
-          "gap": 0.028434912910071775,
+          "gap": 0.03382464155315684,
           "observed_inside_interval": true
         },
         {
@@ -463,11 +463,11 @@
           "observed_n": 746,
           "observed_se": 0.018247626456985383,
           "predicted": {
-            "median": 0.45526604016860406,
-            "p05": 0.3945418717754238,
-            "p95": 0.4962361146337922
+            "median": 0.46124536356872037,
+            "p05": 0.419147313291206,
+            "p95": 0.4995484299617137
           },
-          "gap": -0.004733959831395962,
+          "gap": 0.001245363568720348,
           "observed_inside_interval": true
         },
         {
@@ -478,15 +478,15 @@
           "observed_n": 455,
           "observed_se": 0.023322865260427244,
           "predicted": {
-            "median": 0.47205747872071,
-            "p05": 0.4133349761159956,
-            "p95": 0.5152005748629487
+            "median": 0.4797978205679877,
+            "p05": 0.4379908564787682,
+            "p95": 0.5190376752863742
           },
-          "gap": -0.07794252127929002,
+          "gap": -0.07020217943201235,
           "observed_inside_interval": false
         }
       ],
-      "mean_absolute_gap": 0.042893220182856955,
+      "mean_absolute_gap": 0.03975689765407843,
       "interval_coverage": "5/8",
       "hits": 5,
       "scored": 8,
@@ -500,9 +500,9 @@
         "21 record(s) about a different policy were excluded by policy_key. Pooling them into a 'ctc_2021' estimate would mix answers to different questions about different policies.",
         "MRP fitted on 64 crosstab observations for policy 'ctc_2021', across 2 dimension(s) (census_region, income_band), 2 survey house(s), 5 question wording(s) and 8 fielding date(s) (2021-02-20 to 2021-10-04). No MIN_EVIDENCE_N exclusion is applied; 8 thin record(s) are USED at reduced weight.",
         "Support is reported as of 2021-12-19, using the 'mc_monthly_payment_support' question wording.",
-        "Fitted time trend: -0.0510 logits/month [-0.0622, -0.0400]. Identified from repeated-wording waves; treat as an extrapolation outside the observed window.",
-        "Survey house effects (logit scale, median): morning_consult +0.037; yougov_economist -0.037. Spread 0.075 logits -- instrument effect, removed from the population estimate.",
-        "Between-wording SD: 0.287 logits. Between-level SD for census_region: 0.053; Between-level SD for income_band: 0.005",
+        "Fitted time trend: -0.0517 logits/month [-0.0626, -0.0406]. Identified from repeated-wording waves; treat as an extrapolation outside the observed window.",
+        "Survey house effects (logit scale, median): morning_consult +0.006; yougov_economist -0.006. Spread 0.013 logits -- instrument effect, removed from the population estimate.",
+        "Between-wording SD: 0.247 logits. Between-level SD for census_region: 0.053; Between-level SD for income_band: 0.005",
         "No usable evidence on: household_type. Excluded from the model rather than imputed; groups defined on them report insufficient_evidence."
       ]
     },
@@ -807,11 +807,11 @@
           "observed_n": 1998,
           "observed_se": 0.011185934253567072,
           "predicted": {
-            "median": 0.49374764283659256,
-            "p05": 0.4304292494728093,
-            "p95": 0.5336314994153105
+            "median": 0.5005332427063937,
+            "p05": 0.45644778085263926,
+            "p95": 0.5354477869429695
           },
-          "gap": -0.00625235716340744,
+          "gap": 0.0005332427063936551,
           "observed_inside_interval": true
         },
         {
@@ -822,11 +822,11 @@
           "observed_n": 882,
           "observed_se": 0.016835875742536845,
           "predicted": {
-            "median": 0.49329826362772455,
-            "p05": 0.42798627666422595,
-            "p95": 0.5341789422142169
+            "median": 0.49876056697665094,
+            "p05": 0.45381186591492095,
+            "p95": 0.5362904412626135
           },
-          "gap": -0.006701736372275446,
+          "gap": -0.001239433023349057,
           "observed_inside_interval": true
         },
         {
@@ -837,11 +837,11 @@
           "observed_n": 723,
           "observed_se": 0.018595200082640043,
           "predicted": {
-            "median": 0.49312954089548267,
-            "p05": 0.42904151904140436,
-            "p95": 0.5327082034701027
+            "median": 0.49911072635388465,
+            "p05": 0.45494291405098813,
+            "p95": 0.5349810324772143
           },
-          "gap": -0.006870459104517335,
+          "gap": -0.0008892736461153516,
           "observed_inside_interval": true
         },
         {
@@ -852,11 +852,11 @@
           "observed_n": 392,
           "observed_se": 0.02523360247522242,
           "predicted": {
-            "median": 0.49487615155897746,
-            "p05": 0.43167262609736645,
-            "p95": 0.5344767851741431
+            "median": 0.5014865165789276,
+            "p05": 0.45799273620517367,
+            "p95": 0.5375729708929603
           },
-          "gap": -0.025123848441022556,
+          "gap": -0.018513483421072396,
           "observed_inside_interval": true
         },
         {
@@ -867,11 +867,11 @@
           "observed_n": 353,
           "observed_se": 0.026564369414303877,
           "predicted": {
-            "median": 0.5011988244384757,
-            "p05": 0.4371739618318852,
-            "p95": 0.541868925910129
+            "median": 0.5071110032744807,
+            "p05": 0.46197186259991097,
+            "p95": 0.5437868248989182
           },
-          "gap": -0.028801175561524284,
+          "gap": -0.02288899672551936,
           "observed_inside_interval": true
         },
         {
@@ -882,11 +882,11 @@
           "observed_n": 444,
           "observed_se": 0.023724203629159776,
           "predicted": {
-            "median": 0.4825429880321339,
-            "p05": 0.41571405509381215,
-            "p95": 0.5256908664814137
+            "median": 0.4887037039454056,
+            "p05": 0.4415508212511718,
+            "p95": 0.5271703471498184
           },
-          "gap": -0.0074570119678660785,
+          "gap": -0.0012962960545944147,
           "observed_inside_interval": true
         },
         {
@@ -897,11 +897,11 @@
           "observed_n": 746,
           "observed_se": 0.018291649745229236,
           "predicted": {
-            "median": 0.4898164101017567,
-            "p05": 0.42562988891436615,
-            "p95": 0.5328043849832522
+            "median": 0.4964746482396284,
+            "p05": 0.4493061124847065,
+            "p95": 0.5334175223083283
           },
-          "gap": 0.009816410101756712,
+          "gap": 0.01647464823962841,
           "observed_inside_interval": true
         },
         {
@@ -912,15 +912,15 @@
           "observed_n": 455,
           "observed_se": 0.023421601750764794,
           "predicted": {
-            "median": 0.5032753870696431,
-            "p05": 0.44112344307969525,
-            "p95": 0.5469285101984364
+            "median": 0.5105788688306867,
+            "p05": 0.46438140065004235,
+            "p95": 0.5494033777477164
           },
-          "gap": -0.016724612930356875,
+          "gap": -0.009421131169313313,
           "observed_inside_interval": true
         }
       ],
-      "mean_absolute_gap": 0.01346845145534084,
+      "mean_absolute_gap": 0.008907063123248245,
       "interval_coverage": "8/8",
       "hits": 8,
       "scored": 8,
@@ -933,9 +933,9 @@
         "21 record(s) about a different policy were excluded by policy_key. Pooling them into a 'ctc_2021' estimate would mix answers to different questions about different policies.",
         "MRP fitted on 56 crosstab observations for policy 'ctc_2021', across 2 dimension(s) (census_region, income_band), 2 survey house(s), 5 question wording(s) and 7 fielding date(s) (2021-02-20 to 2021-09-19). No MIN_EVIDENCE_N exclusion is applied; 8 thin record(s) are USED at reduced weight.",
         "Support is reported as of 2021-10-04, using the 'mc_monthly_payment_support' question wording.",
-        "Fitted time trend: -0.0511 logits/month [-0.0643, -0.0378]. Identified from repeated-wording waves; treat as an extrapolation outside the observed window.",
-        "Survey house effects (logit scale, median): morning_consult +0.031; yougov_economist -0.031. Spread 0.062 logits -- instrument effect, removed from the population estimate.",
-        "Between-wording SD: 0.287 logits. Between-level SD for census_region: 0.044; Between-level SD for income_band: 0.005",
+        "Fitted time trend: -0.0518 logits/month [-0.0650, -0.0385]. Identified from repeated-wording waves; treat as an extrapolation outside the observed window.",
+        "Survey house effects (logit scale, median): morning_consult +0.006; yougov_economist -0.006. Spread 0.012 logits -- instrument effect, removed from the population estimate.",
+        "Between-wording SD: 0.247 logits. Between-level SD for census_region: 0.044; Between-level SD for income_band: 0.005",
         "No usable evidence on: household_type. Excluded from the model rather than imputed; groups defined on them report insufficient_evidence."
       ]
     },

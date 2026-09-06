@@ -202,10 +202,20 @@ def simulate(pop, policy, draws):
 
 
 def _weighted_median_rows(values, weights):
-    """Weighted median of each row of `values`. values (S,H), weights (H,)."""
+    """
+    Weighted median of each row of `values`.
+
+    values (S, H). weights is either (H,) -- the same design weights for every
+    seed -- or (S, H), one bootstrap-perturbed weight vector per seed, so the
+    median carries sampling uncertainty like the other three outcomes. Without
+    the 2-D path the median was the only outcome with no sampling error in its
+    band, which showed up on screen as a zero-width interval next to three
+    banded ones.
+    """
     order = np.argsort(values, axis=1)
     v = np.take_along_axis(values, order, axis=1)
-    w = weights[order]
+    w = (np.take_along_axis(weights, order, axis=1)
+         if weights.ndim == 2 else weights[order])
     cw = np.cumsum(w, axis=1)
     half = 0.5 * cw[:, -1][:, None]
     idx = np.argmax(cw >= half, axis=1)
@@ -220,12 +230,40 @@ def _band(arr, baseline):
             "p95": float(np.percentile(a, 95))}
 
 
-def outcomes_for(pop, transfer, new_income, mask=None):
+def bootstrap_weights(n_seeds, n_households, seed=DEFAULT_SEED):
+    """
+    Bayesian bootstrap multipliers, shape (n_seeds, n_households).
+
+    WHY THIS EXISTS. Without it the p05/p95 bands carry PARAMETER uncertainty
+    only -- how much the answer moves when take-up or the elasticity moves --
+    and none of the SAMPLING uncertainty from estimating a rate on a finite
+    sample. Nationally that omission is invisible. On a metro it is not: San
+    Francisco has 2,000 sampled households of which only 31 have children in
+    poverty, so the child poverty rate took just TWO distinct values across 500
+    seeds and the interval collapsed to zero width. A zero-width band claims
+    certainty we do not have, and the app correctly flagged it on screen.
+
+    One multiplier matrix is drawn per run and shared across the national and
+    metro calls, so a household that is up-weighted in the national figure is
+    up-weighted in its metro figure too. Drawing them independently would let
+    the two disagree.
+    """
+    rng = np.random.default_rng(seed + 777)
+    b = rng.exponential(size=(n_seeds, n_households)).astype(np.float32)
+    return b / b.mean(axis=1, keepdims=True)
+
+
+def outcomes_for(pop, transfer, new_income, mask=None, boot=None):
     """
     The four contract outcomes for a subpopulation.
 
     THE SAME FUNCTION produces the national numbers and every metro's numbers.
     Metro results are never derived from national results.
+
+    `boot` adds population sampling uncertainty on top of parameter
+    uncertainty. It is passed by run(); the pre-registered backtest deliberately
+    does NOT use it, because widening an interval after seeing it miss is
+    exactly what docs/backtest.md forbids.
     """
     if mask is None:
         mask = np.ones(pop.n, dtype=bool)
@@ -238,19 +276,30 @@ def outcomes_for(pop, transfer, new_income, mask=None):
     poor = y < thr[None, :]
     base_poor = inc < thr
 
+    # Per-seed weights. With `boot` these carry sampling uncertainty as well as
+    # parameter uncertainty; without it they are the fixed design weights.
+    bs = boot[:, mask] if boot is not None else None
+    dw_s = dw[None, :] * bs if bs is not None else np.broadcast_to(
+        dw[None, :], y.shape)
+    pw_s = pw[None, :] * bs if bs is not None else np.broadcast_to(
+        pw[None, :], y.shape)
+    cw_s = cw[None, :] * bs if bs is not None else np.broadcast_to(
+        cw[None, :], y.shape)
+
+    cw_tot = cw_s.sum(1)
     if cw.sum() > 0:
-        child_rate = (poor * cw[None, :]).sum(1) / cw.sum()
+        child_rate = (poor * cw_s).sum(1) / np.where(cw_tot > 0, cw_tot, 1.0)
         child_base = float((base_poor * cw).sum() / cw.sum())
     else:
         child_rate = np.zeros(y.shape[0])
         child_base = 0.0
-    all_rate = (poor * pw[None, :]).sum(1) / pw.sum()
+    all_rate = (poor * pw_s).sum(1) / pw_s.sum(1)
     all_base = float((base_poor * pw).sum() / pw.sum())
 
-    med = _weighted_median_rows(y, dw)
+    med = _weighted_median_rows(y, dw_s if bs is not None else dw)
     med_base = float(_weighted_median_rows(inc[None, :].astype(np.float32), dw)[0])
 
-    cost = (t * dw[None, :]).sum(1)
+    cost = (t * dw_s).sum(1)
 
     return {
         "child_poverty_rate": _band(child_rate, child_base),
@@ -283,13 +332,14 @@ def run(policy_spec, policy_id, label, n_seeds=500, seed=DEFAULT_SEED, pop=None)
     pop = pop if pop is not None else Population.load()
     draws = draw_params(n_seeds, seed)
     transfer, new_income = simulate(pop, policy_spec, draws)
+    boot = bootstrap_weights(n_seeds, pop.n, seed)
 
     result = {
         "policy_id": policy_id,
         "label": label,
         "n_seeds": int(n_seeds),
         "policy_spec": {**EMPTY_POLICY, **policy_spec},
-        "impact": outcomes_for(pop, transfer, new_income),
+        "impact": outcomes_for(pop, transfer, new_income, boot=boot),
         "by_metro": [],
         "opinion": {"overall_support": None, "by_group": []},
         "warnings": [],
@@ -311,7 +361,7 @@ def run(policy_spec, policy_id, label, n_seeds=500, seed=DEFAULT_SEED, pop=None)
             "households_weighted": float(pop.dw[mmask].sum()),
             "sample_n": int(mmask.sum()),
             "low_sample": bool(mmask.sum() < P.LOW_SAMPLE_N),
-            "impact": outcomes_for(pop, transfer, new_income, mmask),
+            "impact": outcomes_for(pop, transfer, new_income, mmask, boot=boot),
             "top_subgroups": [],
         }
         ranked = []

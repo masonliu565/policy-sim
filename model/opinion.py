@@ -458,6 +458,12 @@ def attach(result, df, n_draws=None, seed=20260905, method=None):
             "group": g["group"],
             "households_weighted": base.get("households_weighted", 0.0),
             "disposable_income_delta": base.get("disposable_income_delta", 0.0),
+            # The engine computes these; attach() used to drop them, which left
+            # the app quarantining the national figures in a "no interval
+            # published" block while the metro ones had bands. Same quantity,
+            # same code path -- carry them through.
+            "disposable_income_delta_p05": base.get("disposable_income_delta_p05"),
+            "disposable_income_delta_p95": base.get("disposable_income_delta_p95"),
             "pct_better_off": base.get("pct_better_off", 0.0),
             "sample_n": base.get("sample_n", g["sample_n"]),
             "low_sample": bool(base.get("low_sample", g["low_sample"])),

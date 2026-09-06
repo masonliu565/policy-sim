@@ -14,27 +14,27 @@
   "impact": {
     "child_poverty_rate": {
       "baseline": 0.13886158776499366,
-      "median": 0.13565744822106537,
-      "p05": 0.1343766798289078,
-      "p95": 0.1359450566374842
+      "median": 0.1351373180232445,
+      "p05": 0.1264222486207295,
+      "p95": 0.14334712695337204
     },
     "overall_poverty_rate": {
       "baseline": 0.10030136392453462,
-      "median": 0.09681895432567736,
-      "p05": 0.09616531518314686,
-      "p95": 0.09699927486530494
+      "median": 0.0965287665124598,
+      "p05": 0.09319578001341262,
+      "p95": 0.10017976344234028
     },
     "median_disposable_income": {
       "baseline": 81321.5234375,
-      "median": 82501.21484375,
-      "p05": 82364.20546875,
-      "p95": 82599.716796875
+      "median": 82395.6015625,
+      "p05": 81700.798046875,
+      "p95": 83720.104296875
     },
     "annual_cost_usd": {
       "baseline": 0.0,
-      "median": 128049653648.24878,
-      "p05": 128049653648.24878,
-      "p95": 128049653648.24878
+      "median": 128076306681.31065,
+      "p05": 127079489350.90732,
+      "p95": 128893462787.7502
     }
   },
   "by_metro": [
@@ -46,27 +46,27 @@
       "impact": {
         "child_poverty_rate": {
           "baseline": 0.1527536298519566,
-          "median": 0.14788161384292767,
-          "p05": 0.14485542322312212,
-          "p95": 0.14788161384292767
+          "median": 0.14564621078913123,
+          "p05": 0.11888647701163052,
+          "p95": 0.18089382633090204
         },
         "overall_poverty_rate": {
           "baseline": 0.09802846910933732,
-          "median": 0.09400278225153667,
-          "p05": 0.09296525774573346,
-          "p95": 0.0946480400243382
+          "median": 0.09326722169876475,
+          "p05": 0.08335202572839884,
+          "p95": 0.10644399606915395
         },
         "median_disposable_income": {
           "baseline": 101525.0,
-          "median": 101962.5546875,
-          "p05": 101906.401953125,
-          "p95": 102018.74921875
+          "median": 102012.57421875,
+          "p05": 98886.40390625,
+          "p95": 106397.330078125
         },
         "annual_cost_usd": {
           "baseline": 0.0,
-          "median": 7687438500.0,
-          "p05": 7687438500.0,
-          "p95": 7687438500.0
+          "median": 7681377872.258062,
+          "p05": 7362180998.566303,
+          "p95": 7997945784.176908
         }
       },
       "top_subgroups": [
@@ -113,27 +113,27 @@
       "impact": {
         "child_poverty_rate": {
           "baseline": 0.20656060326341802,
-          "median": 0.20161504649052311,
-          "p05": 0.1957879921214779,
-          "p95": 0.20161504649052311
+          "median": 0.19846437386867546,
+          "p05": 0.1716528968772975,
+          "p95": 0.23072109460730122
         },
         "overall_poverty_rate": {
           "baseline": 0.14106807919815254,
-          "median": 0.13655624530823862,
-          "p05": 0.13367299635356636,
-          "p95": 0.13655624530823862
+          "median": 0.13579104096075292,
+          "p05": 0.12135206383390286,
+          "p95": 0.15176583697744797
         },
         "median_disposable_income": {
           "baseline": 83250.5,
-          "median": 83821.03515625,
-          "p05": 83750.5,
-          "p95": 83933.412890625
+          "median": 83665.94921875,
+          "p05": 79618.391015625,
+          "p95": 88445.28945312499
         },
         "annual_cost_usd": {
           "baseline": 0.0,
-          "median": 2670473907.518779,
-          "p05": 2670473907.518779,
-          "p95": 2670473907.518779
+          "median": 2674775091.1589437,
+          "p05": 2569917387.4958305,
+          "p95": 2787959487.410511
         }
       },
       "top_subgroups": [
@@ -180,27 +180,27 @@
       "impact": {
         "child_poverty_rate": {
           "baseline": 0.099117002387797,
-          "median": 0.0967073983091228,
-          "p05": 0.0947123987476861,
-          "p95": 0.0967073983091228
+          "median": 0.09519205662344046,
+          "p05": 0.07491882206246729,
+          "p95": 0.12338013869322269
         },
         "overall_poverty_rate": {
           "baseline": 0.08166703623240575,
-          "median": 0.07810874372995978,
-          "p05": 0.0767520381057437,
-          "p95": 0.07810874372995978
+          "median": 0.07744294252635942,
+          "p05": 0.06656255956232776,
+          "p95": 0.09035138738499383
         },
         "median_disposable_income": {
           "baseline": 96448.75,
-          "median": 97323.86328125,
-          "p05": 97211.55390625,
-          "p95": 97436.241015625
+          "median": 97416.3046875,
+          "p05": 94857.109765625,
+          "p95": 101963.83828125
         },
         "annual_cost_usd": {
           "baseline": 0.0,
-          "median": 2358066169.25,
-          "p05": 2358066169.25,
-          "p95": 2358066169.25
+          "median": 2357413137.8663507,
+          "p05": 2260627109.826,
+          "p95": 2450969294.4855323
         }
       },
       "top_subgroups": [
@@ -247,27 +247,27 @@
       "impact": {
         "child_poverty_rate": {
           "baseline": 0.08316321200537106,
-          "median": 0.08316321200537106,
-          "p05": 0.08316321200537106,
-          "p95": 0.08316321200537106
+          "median": 0.0811591414196916,
+          "p05": 0.06379063516590541,
+          "p95": 0.10825703028582918
         },
         "overall_poverty_rate": {
           "baseline": 0.06650757907349417,
-          "median": 0.06508012604950333,
-          "p05": 0.06508012604950333,
-          "p95": 0.06508012604950333
+          "median": 0.06456804684421268,
+          "p05": 0.05537698382477348,
+          "p95": 0.0764520155330715
         },
         "median_disposable_income": {
           "baseline": 89951.1484375,
           "median": 90943.5234375,
-          "p05": 90943.5234375,
-          "p95": 90943.5234375
+          "p05": 88067.64375,
+          "p95": 93855.930078125
         },
         "annual_cost_usd": {
           "baseline": 0.0,
-          "median": 1946336080.5,
-          "p05": 1946336080.5,
-          "p95": 1946336080.5
+          "median": 1946143833.471442,
+          "p05": 1869786548.6987824,
+          "p95": 2027603550.9596312
         }
       },
       "top_subgroups": [
@@ -314,27 +314,27 @@
       "impact": {
         "child_poverty_rate": {
           "baseline": 0.2030349891503225,
-          "median": 0.20123350017513386,
-          "p05": 0.20123350017513386,
-          "p95": 0.20123350017513386
+          "median": 0.19851432274952202,
+          "p05": 0.16404400395572036,
+          "p95": 0.23904244772470204
         },
         "overall_poverty_rate": {
           "baseline": 0.12467281052198818,
-          "median": 0.12332146244455343,
-          "p05": 0.12290903445384788,
-          "p95": 0.12332146244455343
+          "median": 0.12212861493211943,
+          "p05": 0.10851539545989834,
+          "p95": 0.13741015182725802
         },
         "median_disposable_income": {
           "baseline": 72488.8515625,
-          "median": 73385.26171875,
-          "p05": 73216.79921875,
-          "p95": 73553.833984375
+          "median": 73082.75,
+          "p05": 71466.569921875,
+          "p95": 76658.65781249998
         },
         "annual_cost_usd": {
           "baseline": 0.0,
-          "median": 1661113275.2385895,
-          "p05": 1661113275.2385895,
-          "p95": 1661113275.2385895
+          "median": 1660011743.9477086,
+          "p05": 1592531668.536749,
+          "p95": 1731662180.333908
         }
       },
       "top_subgroups": [
@@ -381,27 +381,27 @@
       "impact": {
         "child_poverty_rate": {
           "baseline": 0.0627858973454039,
-          "median": 0.05963089912458736,
-          "p05": 0.05963089912458736,
-          "p95": 0.05963089912458736
+          "median": 0.05795228131630449,
+          "p05": 0.04078144026921371,
+          "p95": 0.08115550691568696
         },
         "overall_poverty_rate": {
           "baseline": 0.062000011594080306,
-          "median": 0.05987185001809888,
-          "p05": 0.05987185001809888,
-          "p95": 0.060209883212384095
+          "median": 0.05905498664322875,
+          "p05": 0.050498981030976005,
+          "p95": 0.06977126919379806
         },
         "median_disposable_income": {
           "baseline": 140815.171875,
-          "median": 141854.7265625,
-          "p05": 141630.1078125,
-          "p95": 142079.48203125
+          "median": 141422.203125,
+          "p05": 136436.13125,
+          "p95": 150319.33671874998
         },
         "annual_cost_usd": {
           "baseline": 0.0,
-          "median": 1790781853.0,
-          "p05": 1790781853.0,
-          "p95": 1790781853.0
+          "median": 1787318509.160725,
+          "p05": 1721915850.4745276,
+          "p95": 1855981464.4461148
         }
       },
       "top_subgroups": [
@@ -450,6 +450,8 @@
         "group": "Q1",
         "households_weighted": 26593489.118047796,
         "disposable_income_delta": 657.8816877758316,
+        "disposable_income_delta_p05": 622.0927217819274,
+        "disposable_income_delta_p95": 693.6920470091966,
         "pct_better_off": 0.9991972470327454,
         "sample_n": 5788,
         "low_sample": false,
@@ -463,6 +465,8 @@
         "group": "Q2",
         "households_weighted": 26535611.215614833,
         "disposable_income_delta": 764.8822150843363,
+        "disposable_income_delta_p05": 696.3638823650076,
+        "disposable_income_delta_p95": 833.4417494734446,
         "pct_better_off": 0.9999630395173771,
         "sample_n": 5768,
         "low_sample": false,
@@ -476,6 +480,8 @@
         "group": "Q3",
         "households_weighted": 26524889.208592,
         "disposable_income_delta": 871.132898961527,
+        "disposable_income_delta_p05": 778.6199236664689,
+        "disposable_income_delta_p95": 963.7047643551682,
         "pct_better_off": 1.0000000000001052,
         "sample_n": 5825,
         "low_sample": false,
@@ -489,6 +495,8 @@
         "group": "Q4",
         "households_weighted": 26535863.17834838,
         "disposable_income_delta": 987.1925201224901,
+        "disposable_income_delta_p05": 872.8536987307319,
+        "disposable_income_delta_p95": 1101.6048888306977,
         "pct_better_off": 1.000000000000107,
         "sample_n": 6078,
         "low_sample": false,
@@ -502,6 +510,8 @@
         "group": "Q5",
         "households_weighted": 26547292.27939698,
         "disposable_income_delta": 1056.060815981601,
+        "disposable_income_delta_p05": 929.480403441615,
+        "disposable_income_delta_p95": 1182.7203939113163,
         "pct_better_off": 1.0000000000001115,
         "sample_n": 6541,
         "low_sample": false,
@@ -515,6 +525,8 @@
         "group": "100k_plus",
         "households_weighted": 0.0,
         "disposable_income_delta": 0.0,
+        "disposable_income_delta_p05": null,
+        "disposable_income_delta_p95": null,
         "pct_better_off": 0.0,
         "sample_n": 13075,
         "low_sample": false,
@@ -528,6 +540,8 @@
         "group": "50k_to_100k",
         "households_weighted": 0.0,
         "disposable_income_delta": 0.0,
+        "disposable_income_delta_p05": null,
+        "disposable_income_delta_p95": null,
         "pct_better_off": 0.0,
         "sample_n": 8111,
         "low_sample": false,
@@ -541,6 +555,8 @@
         "group": "under_50k",
         "households_weighted": 0.0,
         "disposable_income_delta": 0.0,
+        "disposable_income_delta_p05": null,
+        "disposable_income_delta_p95": null,
         "pct_better_off": 0.0,
         "sample_n": 8814,
         "low_sample": false,
@@ -554,6 +570,8 @@
         "group": "couple_no_kids",
         "households_weighted": 42100239.59013797,
         "disposable_income_delta": 911.607203025685,
+        "disposable_income_delta_p05": 832.1170017175849,
+        "disposable_income_delta_p95": 991.1479475847093,
         "pct_better_off": 1.0000000000000648,
         "sample_n": 9404,
         "low_sample": false,
@@ -567,6 +585,8 @@
         "group": "couple_with_kids",
         "households_weighted": 23042708.1936986,
         "disposable_income_delta": 880.8002504046951,
+        "disposable_income_delta_p05": 773.6056670634372,
+        "disposable_income_delta_p95": 988.0628560401071,
         "pct_better_off": 1.0000000000000788,
         "sample_n": 5280,
         "low_sample": false,
@@ -580,6 +600,8 @@
         "group": "other",
         "households_weighted": 23566904.736959785,
         "disposable_income_delta": 1528.913641066999,
+        "disposable_income_delta_p05": 1343.4095716025286,
+        "disposable_income_delta_p95": 1714.5306566992813,
         "pct_better_off": 0.9990525369559875,
         "sample_n": 5466,
         "low_sample": false,
@@ -593,6 +615,8 @@
         "group": "single_no_kids",
         "households_weighted": 38458710.829567745,
         "disposable_income_delta": 465.93686748687105,
+        "disposable_income_delta_p05": 435.30471449990443,
+        "disposable_income_delta_p95": 496.58879350530407,
         "pct_better_off": 1.0000000000000981,
         "sample_n": 8596,
         "low_sample": false,
@@ -606,6 +630,8 @@
         "group": "single_parent",
         "households_weighted": 5568581.649635884,
         "disposable_income_delta": 449.71107219018654,
+        "disposable_income_delta_p05": 404.4872774172416,
+        "disposable_income_delta_p95": 494.96360251240503,
         "pct_better_off": 0.999999999999997,
         "sample_n": 1254,
         "low_sample": false,
@@ -619,6 +645,8 @@
         "group": "Midwest",
         "households_weighted": 28464223.28466666,
         "disposable_income_delta": 835.5820500731403,
+        "disposable_income_delta_p05": 752.7376440055727,
+        "disposable_income_delta_p95": 918.4783018478034,
         "pct_better_off": 0.9997763164310346,
         "sample_n": 6188,
         "low_sample": false,
@@ -632,6 +660,8 @@
         "group": "Northeast",
         "households_weighted": 23188176.39288889,
         "disposable_income_delta": 867.1667177132892,
+        "disposable_income_delta_p05": 778.4664313461117,
+        "disposable_income_delta_p95": 955.9229808395214,
         "pct_better_off": 0.9994508426236866,
         "sample_n": 4464,
         "low_sample": false,
@@ -645,6 +675,8 @@
         "group": "South",
         "households_weighted": 51139932.55072221,
         "disposable_income_delta": 856.6649639240031,
+        "disposable_income_delta_p05": 771.7971290209244,
+        "disposable_income_delta_p95": 941.585958263848,
         "pct_better_off": 0.9999733700443455,
         "sample_n": 11231,
         "low_sample": false,
@@ -658,6 +690,8 @@
         "group": "West",
         "households_weighted": 29944812.771722212,
         "disposable_income_delta": 915.96009931456,
+        "disposable_income_delta_p05": 820.3429593611024,
+        "disposable_income_delta_p95": 1011.6368568462605,
         "pct_better_off": 0.9999376860356363,
         "sample_n": 8117,
         "low_sample": false,
