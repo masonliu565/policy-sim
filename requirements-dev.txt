@@ -1,3 +1,10 @@
 # Dev/test only. Not needed to run the demo.
 -r requirements.txt
+
 pytest>=8.3
+
+# Drives the app in a real browser to verify the map component renders.
+# Uses the system Chrome via channel="chrome", so `playwright install` is not
+# required. See app/tests/test_frontend_js.py for the node-based JS checks,
+# which need node on PATH and skip cleanly without it.
+playwright>=1.48
