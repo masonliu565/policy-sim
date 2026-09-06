@@ -1,0 +1,187 @@
+{
+  "pre_registration": "docs/backtest.md (committed before this code existed)",
+  "tuned": false,
+  "n_seeds": 500,
+  "backtest_1_impact": {
+    "predicted": {
+      "median": -0.03195969364910142,
+      "p05": -0.03796343762801717,
+      "p95": -0.02595452371180209,
+      "modelled_baseline_rate": 0.13886158776499366,
+      "modelled_post_policy_rate_median": 0.10690189411589224
+    },
+    "observed": {
+      "spm_child_poverty_2020": 0.09699999999999999,
+      "spm_child_poverty_2020_moe": 0.004,
+      "spm_child_poverty_2021": 0.052000000000000005,
+      "spm_child_poverty_2021_moe": 0.004,
+      "observed_change": -0.04499999999999999,
+      "observed_change_moe_upper": 0.008,
+      "source": "U.S. Census Bureau, \"Poverty in the United States: 2021\" (P60-277), Table B-3, SPM, Under 18 years",
+      "url": "https://www2.census.gov/programs-surveys/demo/tables/p60/277/tableB-3.xlsx"
+    },
+    "observed_inside_interval": false,
+    "sensitivity": [
+      {
+        "parameter": "labor_supply_elasticity",
+        "low": 0.0,
+        "high": 0.25,
+        "change_at_low": -0.03772156258391135,
+        "change_at_high": -0.02720802926158776,
+        "swing_pts": 1.051353332232359
+      },
+      {
+        "parameter": "take_up_rate",
+        "low": 0.8,
+        "high": 0.97,
+        "change_at_low": -0.02843496232747289,
+        "change_at_high": -0.036570115697108094,
+        "swing_pts": 0.8135153369635204
+      },
+      {
+        "parameter": "marginal_propensity_to_consume",
+        "low": 0.3,
+        "high": 0.7,
+        "change_at_low": -0.033104284830311526,
+        "change_at_high": -0.033104284830311526,
+        "swing_pts": 0.0
+      }
+    ],
+    "tuned": false
+  },
+  "backtest_2_opinion": {
+    "rows": [
+      {
+        "subgroup_type": "national",
+        "subgroup": "national",
+        "evidence_id": "ev_mc2110_nat",
+        "observed": 0.5,
+        "observed_n": 1998,
+        "observed_se": 0.011185934253567072,
+        "predicted": {
+          "median": 0.5398173575213021,
+          "p05": 0.5338823271255982,
+          "p95": 0.5462192776770057
+        },
+        "gap": 0.03981735752130211,
+        "observed_inside_interval": false
+      },
+      {
+        "subgroup_type": "income_band",
+        "subgroup": "under_50k",
+        "evidence_id": "ev_mc2110_inc_lt50",
+        "observed": 0.5,
+        "observed_n": 882,
+        "observed_se": 0.016835875742536845,
+        "predicted": {
+          "median": 0.548342070975395,
+          "p05": 0.5422558591356618,
+          "p95": 0.5543130126086544
+        },
+        "gap": 0.048342070975395,
+        "observed_inside_interval": false
+      },
+      {
+        "subgroup_type": "income_band",
+        "subgroup": "50k_to_100k",
+        "evidence_id": "ev_mc2110_inc_50_100",
+        "observed": 0.5,
+        "observed_n": 723,
+        "observed_se": 0.018595200082640043,
+        "predicted": {
+          "median": 0.5015358846259423,
+          "p05": 0.495121381824926,
+          "p95": 0.5082886360438131
+        },
+        "gap": 0.0015358846259423409,
+        "observed_inside_interval": true
+      },
+      {
+        "subgroup_type": "income_band",
+        "subgroup": "100k_plus",
+        "evidence_id": "ev_mc2110_inc_100p",
+        "observed": 0.52,
+        "observed_n": 392,
+        "observed_se": 0.02523360247522242,
+        "predicted": {
+          "median": 0.55975494685539,
+          "p05": 0.5500802269255683,
+          "p95": 0.5685489476770299
+        },
+        "gap": 0.03975494685538994,
+        "observed_inside_interval": false
+      },
+      {
+        "subgroup_type": "census_region",
+        "subgroup": "Northeast",
+        "evidence_id": "ev_mc2110_reg_ne",
+        "observed": 0.53,
+        "observed_n": 353,
+        "observed_se": 0.026564369414303877,
+        "predicted": {
+          "median": 0.5406341752414099,
+          "p05": 0.5275548193980347,
+          "p95": 0.5538107533141187
+        },
+        "gap": 0.01063417524140986,
+        "observed_inside_interval": true
+      },
+      {
+        "subgroup_type": "census_region",
+        "subgroup": "Midwest",
+        "evidence_id": "ev_mc2110_reg_mw",
+        "observed": 0.49,
+        "observed_n": 444,
+        "observed_se": 0.023724203629159776,
+        "predicted": {
+          "median": 0.5388540283325967,
+          "p05": 0.5259730449470866,
+          "p95": 0.5513085850398466
+        },
+        "gap": 0.048854028332596666,
+        "observed_inside_interval": false
+      },
+      {
+        "subgroup_type": "census_region",
+        "subgroup": "South",
+        "evidence_id": "ev_mc2110_reg_s",
+        "observed": 0.48,
+        "observed_n": 746,
+        "observed_se": 0.018291649745229236,
+        "predicted": {
+          "median": 0.5392332603455262,
+          "p05": 0.5275755631023055,
+          "p95": 0.550250107472758
+        },
+        "gap": 0.05923326034552623,
+        "observed_inside_interval": false
+      },
+      {
+        "subgroup_type": "census_region",
+        "subgroup": "West",
+        "evidence_id": "ev_mc2110_reg_w",
+        "observed": 0.52,
+        "observed_n": 455,
+        "observed_se": 0.023421601750764794,
+        "predicted": {
+          "median": 0.5409004848347498,
+          "p05": 0.5296419577104248,
+          "p95": 0.5532886723531611
+        },
+        "gap": 0.020900484834749822,
+        "observed_inside_interval": false
+      }
+    ],
+    "mean_absolute_gap": 0.033634026091538996,
+    "interval_coverage": "2/8",
+    "warnings": [
+      "Evidence ev_yg2107_inc_100p excluded: sample_size=287 is below the minimum of 300 needed for a stable predictor weight.",
+      "Evidence ev_yg2107_reg_ne excluded: sample_size=252 is below the minimum of 300 needed for a stable predictor weight.",
+      "Evidence ev_dfp_parents excluded: sample_size=None is below the minimum of 300 needed for a stable predictor weight.",
+      "Evidence ev_dfp_nonparents excluded: sample_size=None is below the minimum of 300 needed for a stable predictor weight.",
+      "8 evidence record(s) held out for backtesting and excluded from poststratification.",
+      "Every covered cell resolved at the 'income_band' level, so evidence at these levels did not contribute: census_region, national. Differences along those dimensions in the output reflect the composition of the population, not measured differences in opinion.",
+      "Evidence covers 100.0% of households by weight (168 of 168 population cells)."
+    ]
+  }
+}

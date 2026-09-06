@@ -103,3 +103,84 @@ afterwards as excuses:
 
 Any change to this file after the backtest has run must be an *addition* in a
 later commit, clearly marked as post-hoc, leaving the text above intact.
+
+---
+
+# POST-HOC — results
+
+**Added after the backtest ran.** Everything above this line is the
+pre-registration and is unchanged. Nothing above was edited in light of what
+follows; `git log -p docs/backtest.md` shows that.
+
+## Backtest 1 — missed
+
+| | change in child poverty rate |
+|---|---|
+| predicted | **−3.20 pts**, 90% interval [−3.80, −2.60] |
+| observed | **−4.50 pts** (SPM 9.7% → 5.2%, Census P60-277 Table B-3) |
+| verdict | **observed falls OUTSIDE the interval**, by 0.70 pts |
+
+No parameter was adjusted. The interval was not widened.
+
+Sensitivity, one-at-a-time across each parameter's full declared range:
+
+| parameter | range | change at low | change at high | swing |
+|---|---|---|---|---|
+| `labor_supply_elasticity` | 0.00 – 0.25 | −3.77 pts | −2.72 pts | **1.05 pts** |
+| `take_up_rate` | 0.80 – 0.97 | −2.84 pts | −3.66 pts | 0.81 pts |
+| `marginal_propensity_to_consume` | 0.30 – 0.70 | −3.31 pts | −3.31 pts | 0.00 pts |
+
+The result is most sensitive to `labor_supply_elasticity` — which is one of the
+three parameters with **no citation**. Note also that even the most favourable
+corner of the declared parameter space (elasticity at 0, take-up at 0.97) does
+not reach −4.50. The miss is not attributable to parameter choice alone.
+
+**A pre-registered expectation that turned out wrong.** Registered mismatch #4
+predicted the modelled change would *exceed* the observed change, because the
+engine models the entire credit rather than the increment over the $2,000 TCJA
+credit. The opposite happened: the model under-predicts. That directional call
+was wrong, and the likeliest reason is registered mismatch #2 — SPM counts the
+full set of taxes and transfers and uses geographically adjusted thresholds, and
+the SPM 2020 child baseline (9.7%) is far below this model's OPM-style baseline
+(13.89%). Different baselines make the same policy move a different number of
+points. Saying this now, having got the direction wrong, is the point of having
+written it down first.
+
+## Backtest 2 — mostly missed, in one direction
+
+Held-out poll: Morning Consult/POLITICO #2110009, October 2021. Predicted from
+July evidence only.
+
+- **2 of 8** observed values fell inside the predicted interval
+- **mean absolute gap 3.36 points**
+- **every single gap is positive** — the model over-predicts support in all 8
+  subgroups
+
+The systematic direction is the finding. Support for the CTC genuinely declined
+between July and October 2021 (Morning Consult's own national number moved
+0.54 → 0.50 on an identical question in the same house). The model has **no time
+dimension** — it poststratifies July crosstabs onto a population and has no way
+to know that opinion moved. It is not mis-weighted; it is answering a question
+about July.
+
+The two hits are `50k_to_100k` (gap 0.2 pts) and `Northeast` (gap 1.1 pts).
+
+Regional predictions are near-flat (53.9–54.1) against observed values spanning
+48–53. This was called in advance: every population cell resolves at the
+`income_band` level of the fallback ladder, so the region crosstabs never enter
+the model, and the regional spread in the output is population composition
+rather than measured regional opinion.
+
+## What we would fix, and are not fixing tonight
+
+Listed so it is on the record as a known limitation rather than discovered by a
+judge:
+
+1. Give the fallback ladder a way to combine evidence across dimensions instead
+   of short-circuiting at the most specific level, so region crosstabs
+   contribute.
+2. Add a time dimension, or restrict the evidence base to a single fielding
+   window and state the window on the output.
+3. Get citations for the three TODO parameters, starting with
+   `labor_supply_elasticity`, which dominates the sensitivity.
+4. Compute poverty on an SPM-comparable basis, or stop comparing against SPM.
