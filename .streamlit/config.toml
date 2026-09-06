@@ -1,0 +1,14 @@
+# Projector-first theme. Two fonts (see app/theme.py), flat fills, no gradients.
+[theme]
+base = "light"
+primaryColor = "#D98C3F"            # accent — buttons, focus rings
+backgroundColor = "#A9D6E5"         # pastel blue, the ocean the map sits in
+secondaryBackgroundColor = "#EFE4CE" # beige panels, same beige as the land
+textColor = "#2E2A24"
+font = "sans-serif"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false

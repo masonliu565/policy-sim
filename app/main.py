@@ -12,6 +12,7 @@ estimate. Every figure carries its p05-p95 band.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -26,6 +27,18 @@ from app.scenarios import ScenarioError, list_scenarios, load_scenario
 from app.theme import FONT_MONO, palette
 
 st.set_page_config(page_title="policy-sim", layout="wide", initial_sidebar_state="expanded")
+
+
+def demo_mode() -> bool:
+    """Scenario files only, zero network calls.
+
+    Set POLICY_SIM_DEMO_MODE=1 for the live demo. The parser and the memo are
+    the only things that touch the network, and both refuse to run under it —
+    so the scripted path cannot be broken by wifi, a rate limit or an expired
+    key. Read per call rather than cached so it can be flipped without a
+    restart.
+    """
+    return os.environ.get("POLICY_SIM_DEMO_MODE", "").lower() in ("1", "true", "yes")
 
 
 # ---------------------------------------------------------------------------
@@ -46,6 +59,16 @@ def inject_css(mode: str) -> None:
             background: {pal['panel']}; border: 1px solid {pal['panel_edge']};
             border-radius: 10px; padding: 1.1rem 1.3rem; margin-bottom: 1rem;
           }}
+          .ps-demo {{
+            background: {pal['terrain']}; color: {pal['panel']};
+            padding: .5rem 1rem; border-radius: 6px; font-weight: 650;
+            margin-bottom: .9rem; font-size: 1.05rem;
+          }}
+          .ps-figure {{
+            border-top: 2px solid {pal['ink']}; padding: .55rem 0 .1rem 0;
+            margin-bottom: .2rem;
+          }}
+          .ps-figure-label {{ font-size: 1.05rem; color: {pal['ink_soft']}; }}
           .ps-metric {{ font-size: 1.55rem; font-weight: 650; color: {pal['ink']}; }}
           .ps-delta  {{ font-size: 1.05rem; color: {pal['ink_soft']}; }}
           .ps-readback {{
@@ -130,9 +153,16 @@ def section_policy_input() -> None:
             key="policy_text",
         )
     with col_go:
-        run = st.button("Read it", type="primary", key="run_policy", width="stretch")
+        run = st.button("Read it", type="primary", key="run_policy",
+                        width="stretch", disabled=demo_mode())
 
-    if run:
+    if demo_mode():
+        st.caption(
+            "Parsing is disabled in demo mode — it is the only part of this page "
+            "that would call out to a model. Every figure below is precomputed."
+        )
+
+    if run and not demo_mode():
         with st.spinner("Reading the policy…"):
             st.session_state["parse_outcome"] = parse_policy(text)
 
@@ -269,10 +299,15 @@ def _impact_card(key: str, band: dict, mode: str) -> None:
     label = IMPACT_LABELS.get(key, key.replace("_", " ").capitalize())
     delta = charts.delta_text(band, unit)
 
-    panel(
-        f"<div style='font-size:1.05rem;letter-spacing:.02em'>{label}</div>"
+    # Deliberately not a bordered card. Four identical rounded boxes in a grid
+    # read as chrome; a label, a figure and a rule read as a result.
+    st.markdown(
+        f"<div class='ps-figure'>"
+        f"<div class='ps-figure-label'>{label}</div>"
         f"<div class='ps-metric'>{charts.interval_text(band, unit)}</div>"
         f"<div class='ps-delta'>{delta or ''}</div>"
+        f"</div>",
+        unsafe_allow_html=True,
     )
     fig = charts.interval_figure(
         [charts.impact_row(key, band, label)], unit=unit, mode=mode, width=8.0
@@ -411,7 +446,14 @@ def section_report(scenario: dict) -> None:
         "already in them. The panel below checks that mechanically, afterwards."
     )
 
-    if st.button("Write the memo", key="run_report"):
+    if demo_mode():
+        st.caption(
+            "Memo generation is disabled in demo mode. The scenario figures and "
+            "their intervals above are unaffected — they never needed the model."
+        )
+        return
+
+    if st.button("Write the memo", key="run_report", disabled=demo_mode()):
         clean = {k: v for k, v in scenario.items() if not k.startswith("_")}
         with st.spinner("Writing…"):
             st.session_state["report_outcome"] = generate_report(clean, load_evidence())
@@ -487,6 +529,13 @@ def main() -> None:
         st.error(f"Scenario failed validation: {exc}")
         st.stop()
         return
+
+    if demo_mode():
+        st.markdown(
+            "<div class='ps-demo'>DEMO MODE — reading precomputed scenarios only. "
+            "No network calls are made.</div>",
+            unsafe_allow_html=True,
+        )
 
     st.title(scenario.get("label", scenario.get("policy_id", "policy-sim")))
     st.caption(
