@@ -1,0 +1,55 @@
+# Official U.S. Census Bureau poverty thresholds for 2024, by family size
+# and number of related children under 18.
+# Source: U.S. Census Bureau, "Poverty Thresholds for 2024 by Size of Family
+#         and Number of Related Children Under 18 Years" (thresh24.xlsx)
+# URL: https://www2.census.gov/programs-surveys/cps/tables/time-series/historical-poverty-thresholds/thresh24.xlsx
+# Parsed by model/build_poverty_thresholds.py -- values are NOT hand-typed.
+# family_size 1 and 2 use the "householder under 65" variant; the sample does
+# not carry householder age. This does not affect child poverty (those units
+# have no children) but slightly overstates poverty for elderly 1-2 person units.
+family_size,related_children_under_18,threshold_usd
+1,0,16320
+2,0,21006
+2,1,21621
+3,0,24537
+3,1,25249
+3,2,25273
+4,0,32355
+4,1,32884
+4,2,31812
+4,3,31922
+5,0,39019
+5,1,39586
+5,2,38374
+5,3,37436
+5,4,36863
+6,0,44879
+6,1,45057
+6,2,44128
+6,3,43238
+6,4,41915
+6,5,41131
+7,0,51638
+7,1,51961
+7,2,50849
+7,3,50075
+7,4,48631
+7,5,46948
+7,6,45100
+8,0,57753
+8,1,58263
+8,2,57215
+8,3,56296
+8,4,54992
+8,5,53337
+8,6,51614
+8,7,51177
+9,0,69473
+9,1,69810
+9,2,68882
+9,3,68102
+9,4,66822
+9,5,65062
+9,6,63469
+9,7,63075
+9,8,60645
