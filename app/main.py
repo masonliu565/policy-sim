@@ -1,706 +1,326 @@
 """
-policy-sim — Streamlit demo.
+policy-sim.
 
-Architecture rule, enforced by construction: LLMs parse and explain, the
-statistical model produces every number. This file reads /scenarios/*.json and
-renders it. It does not import from /model, and it never computes a policy
-figure of its own.
+Four things on screen: the map, one outcome box, the policy box, and reset.
 
-Second rule, enforced in app/charts.py: nothing renders as a bare point
-estimate. Every figure carries its p05-p95 band.
+It runs on its own. No API key is required and no network call is made: the
+policy box is read by app/local_parser.py offline, and the numbers come from
+the real microsimulation running locally over the sampled ACS population. A
+key is optional and only ever used to read unusual English into levers -- it
+never produces a number.
+
+    python -m streamlit run app/main.py
 """
 from __future__ import annotations
 
-import json
 import os
 import sys
 from pathlib import Path
+from typing import Any, Dict, Optional
 
 import streamlit as st
+import streamlit.components.v1 as components
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+REPO = Path(__file__).resolve().parent.parent
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
 
-from app import charts
-from app.parser import ParseError, ParseResult, parse_policy
-from app.report import ReportError, ReportResult, generate_report
-from app import map_view
-from app.scenarios import ScenarioError, list_scenarios, load_scenario
-from app.theme import FONT_MONO, palette
+from app import live, local_parser  # noqa: E402
+from app import scenarios as S  # noqa: E402
+from app.geo import CITIES, US_OUTLINE  # noqa: E402
 
-st.set_page_config(page_title="policy-sim", layout="wide", initial_sidebar_state="expanded")
+_map = components.declare_component("policy_sim_map",
+                                    path=str(Path(__file__).parent / "frontend_map"))
 
+BEIGE, GREEN, INK, MUTED = "#f9f9ef", "#31553f", "#344c40", "#7e8c73"
+HAS_KEY = bool(os.environ.get("ANTHROPIC_API_KEY", "").strip()
+               or (REPO / ".env").exists())
 
-def demo_mode() -> bool:
-    """Scenario files only, zero network calls.
+st.set_page_config(page_title="policy-sim", layout="wide",
+                   initial_sidebar_state="collapsed")
 
-    Set POLICY_SIM_DEMO_MODE=1 for the live demo. The parser and the memo are
-    the only things that touch the network, and both refuse to run under it —
-    so the scripted path cannot be broken by wifi, a rate limit or an expired
-    key. Read per call rather than cached so it can be flipped without a
-    restart.
-    """
-    return os.environ.get("POLICY_SIM_DEMO_MODE", "").lower() in ("1", "true", "yes")
-
-
-# ---------------------------------------------------------------------------
-# Chrome
-# ---------------------------------------------------------------------------
-def inject_css(mode: str) -> None:
-    pal = palette(mode)
-    st.markdown(
-        f"""
-        <style>
-          .stApp {{ background: {pal['ocean']}; }}
-          .block-container {{ padding-top: 2.2rem; max-width: 1600px; }}
-          section[data-testid="stSidebar"] {{ background: {pal['panel']}; }}
-          h1, h2, h3, h4, p, li, label, span {{ color: {pal['ink']}; }}
-          h1 {{ font-size: 2.5rem; letter-spacing: -0.02em; }}
-          h2 {{ font-size: 1.7rem; margin-top: 0.4rem; }}
-          .ps-panel {{
-            background: {pal['panel']}; border: 1px solid {pal['panel_edge']};
-            border-radius: 10px; padding: 1.1rem 1.3rem; margin-bottom: 1rem;
-          }}
-          .ps-demo {{
-            background: {pal['terrain']}; color: {pal['panel']};
-            padding: .5rem 1rem; border-radius: 6px; font-weight: 650;
-            margin-bottom: .9rem; font-size: 1.05rem;
-          }}
-          .ps-figure {{
-            border-top: 2px solid {pal['ink']}; padding: .55rem 0 .1rem 0;
-            margin-bottom: .2rem;
-          }}
-          .ps-figure-label {{ font-size: 1.05rem; color: {pal['ink_soft']}; }}
-          .ps-metric {{ font-size: 1.55rem; font-weight: 650; color: {pal['ink']}; }}
-          .ps-delta  {{ font-size: 1.05rem; color: {pal['ink_soft']}; }}
-          .ps-readback {{
-            background: {pal['panel']}; border: 3px solid {pal['accent']};
-            border-radius: 12px; padding: 1.2rem 1.4rem; margin: 1rem 0 0.6rem 0;
-          }}
-          .ps-readback h3 {{ margin: 0 0 .2rem 0; font-size: 1.45rem; }}
-          .ps-lever {{ font-family: {FONT_MONO}; font-size: 1.05rem; }}
-          .ps-verify-ok {{
-            background: {pal['panel']}; border-left: 6px solid {pal['terrain']};
-            padding: .9rem 1.1rem; border-radius: 6px; font-size: 1.1rem;
-          }}
-          .ps-verify-bad {{
-            background: {pal['warn_bg']}; border-left: 6px solid {pal['baseline']};
-            padding: .9rem 1.1rem; border-radius: 6px; font-size: 1.05rem;
-          }}
-          .ps-caveat {{
-            background: {pal['warn_bg']}; border-left: 5px solid {pal['warn_edge']};
-            padding: 0.7rem 1rem; margin: 0.35rem 0; border-radius: 4px;
-            font-size: 1.02rem; color: {pal['ink']};
-          }}
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def panel(body: str) -> None:
-    st.markdown(f'<div class="ps-panel">{body}</div>', unsafe_allow_html=True)
+st.markdown(f"""
+<style>
+  #MainMenu, footer, header {{ visibility: hidden; }}
+  .stAppDeployButton {{ display: none; }}
+  .block-container {{ padding: 1.5rem 2.2rem 3rem; max-width: 1420px; }}
+  .stApp {{ background: #eef2e6; }}
+  html, body, [class*="css"] {{
+     font-family: "DM Sans", -apple-system, "Segoe UI", sans-serif; color: {INK}; }}
+  .ps-head {{ display:flex; align-items:baseline; gap:13px; margin-bottom:13px; }}
+  .ps-title {{ font-size:25px; font-weight:700; letter-spacing:-.9px; color:{GREEN}; }}
+  .ps-sub {{ font-size:11px; color:{MUTED}; }}
+  .ps-card {{ background:{BEIGE}; border:1px solid #dfe5d3; border-radius:14px;
+              padding:17px 20px; }}
+  .ps-eyebrow {{ font-size:8.5px; font-weight:650; letter-spacing:1.5px;
+                 text-transform:uppercase; color:{MUTED}; }}
+  .ps-scope {{ font-size:19px; font-weight:650; letter-spacing:-.4px;
+               color:{GREEN}; margin:3px 0 13px; }}
+  .ps-grid {{ display:grid; grid-template-columns:repeat(5,1fr); }}
+  .ps-cell {{ padding:2px 18px; border-left:1px solid #e8ebdd; }}
+  .ps-cell:first-child {{ padding-left:0; border-left:0; }}
+  .ps-label {{ font-size:10.5px; color:{MUTED}; }}
+  .ps-value {{ font-size:23px; font-weight:650; letter-spacing:-.7px; color:{INK};
+               font-variant-numeric:tabular-nums; line-height:1.25; }}
+  .ps-band {{ font-size:10.5px; color:#8d9a83; font-variant-numeric:tabular-nums; }}
+  .ps-delta {{ font-size:10.5px; color:#5c7f63; font-variant-numeric:tabular-nums; }}
+  .ps-none {{ font-size:12.5px; font-weight:600; color:#9aa48d; }}
+  .ps-note {{ font-size:10.5px; color:{MUTED}; line-height:1.55; margin-top:4px; }}
+  .ps-flag {{ display:inline-block; font-size:8.5px; font-weight:650;
+              background:#eaf0da; color:#5d7a4c; border-radius:4px;
+              padding:2px 6px; margin-left:7px; }}
+  div[data-testid="stTextArea"] textarea {{
+     background:{BEIGE}; border:1px solid #dfe5d3; border-radius:10px;
+     font-size:13.5px; color:{INK}; }}
+  .stButton > button {{ background:{BEIGE}; color:{GREEN}; border:1px solid #dfe5d3;
+     border-radius:9px; font-size:12px; font-weight:600; padding:10px 15px; }}
+  .stButton > button:hover {{ background:#eef2e2; border-color:#cdd8bd; color:{GREEN}; }}
+  div[data-testid="stExpander"] {{ border:0; }}
+  div[data-testid="stExpander"] summary {{ font-size:11px; color:{MUTED}; }}
+</style>
+""", unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------
-# Sidebar — scenario switcher
+def pct(v):
+    return "—" if v is None else f"{100 * v:.1f}%"
+
+
+def usd(v):
+    if v is None:
+        return "—"
+    a = abs(v)
+    if a >= 1e9:
+        return f"${v / 1e9:,.1f}B"
+    if a >= 1e6:
+        return f"${v / 1e6:,.1f}M"
+    return f"${v:,.0f}"
+
+
+ROWS = [("child_poverty_rate", "Child poverty rate", pct, "pts"),
+        ("overall_poverty_rate", "Overall poverty rate", pct, "pts"),
+        ("median_disposable_income", "Median disposable income", usd, "usd"),
+        ("annual_cost_usd", "Annual cost", usd, "usd")]
+
+
+def cell(key, label, fmt, kind, impact):
+    b = impact.get(key) or {}
+    med, p05, p95, base = b.get("median"), b.get("p05"), b.get("p95"), b.get("baseline")
+    if kind == "pts" and med is not None and base is not None:
+        delta = f"{100 * (med - base):+.2f} pts vs baseline"
+    elif med is not None and base:
+        delta = f"{usd(med - base)} vs baseline"
+    else:
+        delta = ""
+    band = (f"{fmt(p05)} – {fmt(p95)}" if p05 != p95 else f"{fmt(p05)} · no spread")
+    return (f'<div class="ps-cell"><div class="ps-label">{label}</div>'
+            f'<div class="ps-value">{fmt(med)}</div>'
+            f'<div class="ps-band">{band}</div>'
+            f'<div class="ps-delta">{delta}</div></div>')
+
+
+def support_cell(sc, metro):
+    if metro:
+        return ('<div class="ps-cell"><div class="ps-label">Public support</div>'
+                '<div class="ps-none">national only</div>'
+                '<div class="ps-note">Opinion evidence is not broken out by '
+                'metro.</div></div>')
+    s = (sc.get("opinion") or {}).get("overall_support")
+    if s:
+        return (f'<div class="ps-cell"><div class="ps-label">Public support</div>'
+                f'<div class="ps-value">{pct(s["median"])}</div>'
+                f'<div class="ps-band">{pct(s["p05"])} – {pct(s["p95"])}</div></div>')
+    reason = ("outside the evidence base" if sc.get("in_support") is False
+              else "insufficient evidence")
+    near = (sc.get("nearest_policies") or [{}])[0]
+    tail = (f'<div class="ps-note">Nearest we have data on: {near["label"]}</div>'
+            if near.get("label") else "")
+    return (f'<div class="ps-cell"><div class="ps-label">Public support</div>'
+            f'<div class="ps-none">{reason}</div>'
+            f'<div class="ps-note">Impact figures unaffected.</div>{tail}</div>')
+
+
 # ---------------------------------------------------------------------------
-def sidebar() -> dict:
-    st.sidebar.title("policy-sim")
+for k, v in (("metro", None), ("policy_text", ""), ("result", None),
+             ("readback", None)):
+    st.session_state.setdefault(k, v)
 
-    entries = list_scenarios()
-    if not entries:
-        st.sidebar.error("No files in /scenarios. Track A's precompute step (A7) has not run.")
-        st.stop()
+mode = ("running locally · no network calls" if not HAS_KEY
+        else "running locally · Claude available for unusual phrasing")
+st.markdown(f'<div class="ps-head"><span class="ps-title">policy-sim</span>'
+            f'<span class="ps-sub">{mode}</span></div>', unsafe_allow_html=True)
 
-    labels = [f"{e['label']}  ·  {e['filename']}" for e in entries]
-    idx = st.sidebar.selectbox(
-        "Scenario", range(len(entries)), format_func=lambda i: labels[i], key="scenario_idx"
-    )
-    chosen = entries[idx]
+options = S.list_scenarios()
+labels = [o["label"] for o in options]
+default = ("Expanded Child Tax Credit (2021)" if "Expanded Child Tax Credit (2021)"
+           in labels else (labels[0] if labels else None))
 
-    if chosen["error"]:
-        st.sidebar.error(f"{chosen['filename']} could not be read:\n\n{chosen['error']}")
-        st.stop()
-
-    st.sidebar.caption(f"{len(entries)} scenario file(s) on disk")
-    st.sidebar.divider()
-    stored = st.session_state.get("map_mode", "day")
-    mode = "night" if st.sidebar.toggle(
-        "Night palette", value=(stored == "night"), key="night") else "day"
-    if mode != stored:
-        st.session_state["map_mode"] = mode
-    return {"entry": chosen, "mode": mode}
-
-
-# ---------------------------------------------------------------------------
-# Main view — the isometric map
-# ---------------------------------------------------------------------------
-def section_map(scenario: dict, mode: str) -> str:
-    """Draw the map and act on whatever the user did inside it.
-
-    The component owns the zoom and the panel swap so they stay smooth; Python
-    only hears about the result afterwards. Events carry a nonce because the
-    component's return value persists across reruns, and acting on it twice
-    would re-parse a policy the user submitted once.
-    """
-    event = map_view.render(
-        scenario,
-        mode=mode,
-        stack=st.session_state.get("policy_stack", []),
-        policy_note=st.session_state.get("map_note", ""),
-        rebuild=st.session_state.get("map_rebuild", False),
-        key="isomap",
-    )
-    st.session_state["map_rebuild"] = False
-
-    if not event:
-        return mode
-
-    st.session_state["selected_metro"] = event.get("metro")
-
-    if event.get("mode") in ("day", "night") and event["mode"] != mode:
-        st.session_state["map_mode"] = event["mode"]
+c1, c2 = st.columns([5, 1])
+with c1:
+    # Indices with a format function, not label strings: the selection is
+    # positional everywhere else (and in the tests), and two scenarios could
+    # legitimately share a label.
+    choice = st.selectbox("Scenario", range(len(labels)),
+                          index=labels.index(default) if default else 0,
+                          format_func=lambda i: labels[i],
+                          label_visibility="collapsed", key="scenario_idx",
+                          disabled=st.session_state.result is not None)
+with c2:
+    if st.button("Reset", use_container_width=True):
+        for k in ("metro", "policy_text", "result", "readback"):
+            st.session_state[k] = None if k != "policy_text" else ""
         st.rerun()
 
-    nonce = event.get("nonce")
-    if nonce and nonce != st.session_state.get("map_nonce"):
-        st.session_state["map_nonce"] = nonce
-
-        if event.get("reset"):
-            _reset_to_baseline()
-
-        text = event.get("policy_text")
-        if text:
-            if demo_mode():
-                st.session_state["map_note"] = "Parsing is off in demo mode."
-            else:
-                with st.spinner("Reading the policy…"):
-                    outcome = parse_policy(text)
-                st.session_state["parse_outcome"] = outcome
-                st.session_state["policy_text_from_map"] = text
-                st.session_state["map_note"] = (
-                    outcome.message if isinstance(outcome, ParseError)
-                    else "Read — see the panel below."
-                )
-            st.rerun()
-
-    return mode
-
-
-def _reset_to_baseline() -> None:
-    """Clear the stack and return to the baseline scenario if one exists.
-
-    If no baseline scenario file has been precomputed, this says so rather than
-    inventing a zero-policy result.
-    """
-    st.session_state["policy_stack"] = []
-    st.session_state["parse_outcome"] = None
-    st.session_state["report_outcome"] = None
-    st.session_state["selected_metro"] = None
-
-    entries = list_scenarios()
-    baseline = next((i for i, e in enumerate(entries)
-                     if e["policy_id"] == "baseline" or e["filename"] == "baseline.json"), None)
-    if baseline is None:
-        st.session_state["map_note"] = (
-            "Reset. No baseline scenario file exists yet (Track A's A7 step), "
-            "so the view stays on the current scenario."
-        )
-    else:
-        st.session_state["scenario_idx"] = baseline
-        st.session_state["map_note"] = "Reset to baseline."
-
-
-# ---------------------------------------------------------------------------
-# Section 1 — policy input, and the read-back panel
-# ---------------------------------------------------------------------------
-LEVER_LABELS = {
-    "credit_per_child_under_6": "Credit per child under 6 ($/yr)",
-    "credit_per_child_6_to_17": "Credit per child 6–17 ($/yr)",
-    "fully_refundable": "Fully refundable",
-    "phaseout_start_single": "Phaseout starts, single ($)",
-    "phaseout_start_joint": "Phaseout starts, joint ($)",
-    "phaseout_rate": "Phaseout rate (fraction)",
-    "flat_transfer_per_adult": "Flat transfer per adult ($/yr)",
-}
-
-
-def section_policy_input() -> None:
-    st.header("1 · Policy")
-
-    col_text, col_go = st.columns([5, 1], gap="medium", vertical_alignment="bottom")
-    with col_text:
-        text = st.text_area(
-            "Describe a policy in plain English",
-            placeholder="e.g. give every family $300 a month per kid, phase it out over $150k",
-            height=110,
-            key="policy_text",
-        )
-    with col_go:
-        run = st.button("Read it", type="primary", key="run_policy",
-                        width="stretch", disabled=demo_mode())
-
-    if demo_mode():
-        st.caption(
-            "Parsing is disabled in demo mode — it is the only part of this page "
-            "that would call out to a model. Every figure below is precomputed."
-        )
-
-    if run and not demo_mode():
-        with st.spinner("Reading the policy…"):
-            st.session_state["parse_outcome"] = parse_policy(text)
-
-    outcome = st.session_state.get("parse_outcome")
-    if outcome is None:
-        st.caption(
-            "The scenarios in the sidebar are precomputed and need no network call. "
-            "Parsing free text calls the model to translate it into levers — it never "
-            "produces a number you see on this page."
-        )
-        return
-
-    if isinstance(outcome, ParseError):
-        _render_parse_error(outcome)
-    else:
-        _render_readback(outcome)
-
-
-def _render_parse_error(err: ParseError) -> None:
-    st.markdown(
-        f"<div class='ps-readback' style='border-color:#A6453B'>"
-        f"<h3>Could not read that as a policy</h3>"
-        f"<div style='font-size:1.1rem'>{err.message}</div>"
-        + (f"<div class='ps-delta' style='margin-top:.5rem'>{err.detail}</div>" if err.detail else "")
-        + "<div class='ps-delta' style='margin-top:.6rem'>Nothing was simulated. "
-          "Pick a precomputed scenario from the sidebar.</div></div>",
-        unsafe_allow_html=True,
-    )
-
-
-def _render_readback(result: ParseResult) -> None:
-    """The panel that makes this an instrument rather than a black box.
-
-    Deliberately not an expander: the whole point is that the reading is
-    visible without the user going looking for it.
-    """
-    spec = result.spec
-    st.markdown(
-        f"<div class='ps-readback'><h3>Here's how I read your policy</h3>"
-        f"<div class='ps-delta'>{spec.label} · <code>{spec.instrument}</code></div></div>",
-        unsafe_allow_html=True,
-    )
-
-    st.caption("Every field is editable. If the reading is wrong, correct it here.")
-    levers = spec.levers.model_dump()
-    edited: dict = {}
-
-    cols = st.columns(3, gap="medium")
-    for i, (name, value) in enumerate(levers.items()):
-        label = LEVER_LABELS.get(name, name)
-        with cols[i % 3]:
-            if isinstance(value, bool):
-                edited[name] = st.checkbox(label, value=value, key=f"lv_{name}")
-            elif name == "phaseout_rate":
-                edited[name] = st.number_input(
-                    label, value=float(value), min_value=0.0, max_value=1.0,
-                    step=0.01, format="%.3f", key=f"lv_{name}",
-                )
-            else:
-                edited[name] = st.number_input(
-                    label, value=None if value is None else float(value),
-                    min_value=0.0, step=100.0, format="%.0f", key=f"lv_{name}",
-                    placeholder="not set",
-                )
-
-    _render_uncertainties(spec.parser_uncertainties)
-
-    st.markdown(
-        "<div class='ps-caveat'><b>These levers are not yet simulated.</b> "
-        "The figures below come from the precomputed scenario selected in the "
-        "sidebar, not from this reading. Wiring the live engine is Track A's A7 "
-        "step.</div>",
-        unsafe_allow_html=True,
-    )
-    st.session_state["edited_levers"] = edited
-
-
-def _render_uncertainties(items: list) -> None:
-    st.markdown("#### What I had to guess")
-    if not items:
-        st.markdown(
-            "<div class='ps-caveat'>The parser reported no inferred fields — it "
-            "claims your text stated everything explicitly. Worth checking against "
-            "the levers above.</div>",
-            unsafe_allow_html=True,
-        )
-        return
-    for item in items:
-        st.markdown(f"<div class='ps-caveat'>{item}</div>", unsafe_allow_html=True)
-
-
-# ---------------------------------------------------------------------------
-# Section 2 — material impact
-# ---------------------------------------------------------------------------
-IMPACT_LABELS = {
-    "child_poverty_rate": "Child poverty rate",
-    "overall_poverty_rate": "Overall poverty rate",
-    "median_disposable_income": "Median disposable income",
-    "annual_cost_usd": "Annual cost",
-}
-IMPACT_ORDER = list(IMPACT_LABELS)
-
-
-def ordered_impacts(impact: dict):
-    """Known outcomes first in a fixed order, then anything Track A adds."""
-    keys = [k for k in IMPACT_ORDER if k in impact]
-    keys += [k for k in impact if k not in IMPACT_LABELS]
-    return keys
-
-
-def section_impact(scenario: dict, mode: str) -> None:
-    st.header("2 · Material impact")
-    st.caption(
-        "Bar spans the 5th–95th percentile across "
-        f"{scenario.get('n_seeds', '?')} simulation seeds. "
-        "Vertical slab is the median. Dashed red rule is the baseline — the "
-        "world without the policy."
-    )
-
-    impact = scenario["impact"]
-    keys = ordered_impacts(impact)
-
-    for left, right in zip(keys[0::2], keys[1::2] + [None] * (len(keys) % 2)):
-        cols = st.columns(2, gap="large")
-        for col, key in zip(cols, (left, right)):
-            if key is None:
-                continue
-            with col:
-                _impact_card(key, impact[key], mode)
-
-
-def _impact_card(key: str, band: dict, mode: str) -> None:
-    unit = charts.infer_unit(key)
-    label = IMPACT_LABELS.get(key, key.replace("_", " ").capitalize())
-    delta = charts.delta_text(band, unit)
-
-    # Deliberately not a bordered card. Four identical rounded boxes in a grid
-    # read as chrome; a label, a figure and a rule read as a result.
-    st.markdown(
-        f"<div class='ps-figure'>"
-        f"<div class='ps-figure-label'>{label}</div>"
-        f"<div class='ps-metric'>{charts.interval_text(band, unit)}</div>"
-        f"<div class='ps-delta'>{delta or ''}</div>"
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-    fig = charts.interval_figure(
-        [charts.impact_row(key, band, label)], unit=unit, mode=mode, width=8.0
-    )
-    st.pyplot(fig, width='stretch')
-    charts.close(fig)
-
-
-# ---------------------------------------------------------------------------
-# Section 3 — support by group
-# ---------------------------------------------------------------------------
-GROUP_TYPE_LABELS = {
-    "income_quintile": "By income quintile",
-    "census_region": "By census region",
-    "household_type": "By household type",
-}
-
-
-def section_opinion(scenario: dict, mode: str) -> None:
-    st.header("3 · Support by group")
-
-    opinion = scenario.get("opinion") or {}
-
-    if scenario.get("in_support") is False:
-        _render_out_of_support(scenario)
-
-    overall = opinion.get("overall_support")
-    if overall:
-        panel(
-            "<div style='font-size:1.05rem'>Overall support</div>"
-            f"<div class='ps-metric'>{charts.interval_text(overall, charts.PERCENT)}</div>"
-            "<div class='ps-delta'>poststratified from survey crosstabs; band combines "
-            "crosstab sampling error with population sampling error</div>"
-        )
-    else:
-        st.markdown(
-            "<div class='ps-caveat'><b>Overall support: insufficient evidence.</b> "
-            + ("The policy lies outside the evidence base, so no national support "
-               "figure is produced. The material impact above is unaffected."
-               if scenario.get("in_support") is False else
-               "There is not enough evidence to support a national number.")
-            + "</div>",
-            unsafe_allow_html=True,
-        )
-
-    groups = opinion.get("by_group") or []
-    if not groups:
-        st.info("This scenario carries no subgroup opinion estimates.")
-        return
-
-    by_type: dict[str, list] = {}
-    for g in groups:
-        by_type.setdefault(g["group_type"], []).append(g)
-
-    for gtype, members in by_type.items():
-        st.subheader(GROUP_TYPE_LABELS.get(gtype, gtype.replace("_", " ").title()))
-
-        withband = [m for m in members if m.get("support")]
-        if withband:
-            rows = [
-                {"label": m["group"] + (" (low sample)" if m.get("low_sample") else ""),
-                 "p05": m["support"]["p05"], "median": m["support"]["median"],
-                 "p95": m["support"]["p95"], "baseline": None}
-                for m in withband
-            ]
-            fig = charts.interval_figure(
-                rows, unit=charts.PERCENT, mode=mode,
-                xlabel="support (bar = 5th–95th percentile)",
-                show_baseline=False, width=9.0,
-            )
-            st.pyplot(fig, width='stretch')
-            charts.close(fig)
-
-        for m in members:
-            _render_group_line(m)
-
-        _uninterval_note(members)
-
-
-def _render_out_of_support(scenario: dict) -> None:
-    """State 3. The model declining to answer is the feature, so make it look
-    deliberate rather than like a missing value."""
-    near = scenario.get("nearest_policies") or []
-    rows = "".join(
-        f"<li><b>{n.get('label', n.get('policy_id'))}</b>"
-        + (f" ({n['year']})" if n.get("year") else "")
-        + (f" — lever-space distance {n['distance']:.1f}, cutoff 1.5"
-           if n.get("distance") is not None else "")
-        + (f"<br><span style='font-size:.92em'>{n['source']}</span>" if n.get("source") else "")
-        + "</li>"
-        for n in near
-    )
-    st.markdown(
-        "<div class='ps-caveat'><b>This policy is outside the evidence base.</b> "
-        "No historical policy is close enough in lever-space to say anything about "
-        "opinion, so every support figure below is withheld rather than guessed. "
-        "The material impact in section 2 is unaffected — the microsimulation does "
-        "not need opinion evidence."
-        + (f"<br><br><b>What there is data on:</b><ul>{rows}</ul>" if rows else "")
-        + "</div>",
-        unsafe_allow_html=True,
-    )
-
-
-def _render_group_line(m: dict) -> None:
-    low = " · **low sample**" + (f" (n={m['sample_n']})" if m.get("sample_n") else "") \
-        if m.get("low_sample") else ""
-    ev = m.get("evidence_ids") or []
-    evtxt = f" · evidence: `{'`, `'.join(ev)}`" if ev else ""
-
-    if m.get("support"):
-        st.markdown(
-            f"**{m['group']}** — support "
-            f"{charts.interval_text(m['support'], charts.PERCENT)}{low}{evtxt}"
-        )
-        return
-
-    cov = m.get("evidence_coverage")
-    why = ("outside the evidence base"
-           if m.get("evidence_status") == "out_of_support"
-           else "insufficient evidence")
-    covtxt = (f" — evidence coverage {cov * 100:.0f}% of this group's households"
-              if cov is not None else "")
-    st.markdown(
-        f"**{m['group']}** — <b>insufficient evidence</b> "
-        f"<span style='color:#6B6355'>({why}{covtxt})</span>{low}",
-        unsafe_allow_html=True,
-    )
-
-
-def _uninterval_note(members: list) -> None:
-    """Fields the scenario still gives as bare numbers.
-
-    The contract now ships disposable_income_delta_p05/_p95 for metro
-    subgroups, so those render as real intervals. National by_group entries
-    still carry a bare delta, and those are quarantined here and labelled
-    rather than shown as if their precision were known.
-    """
-    bare = [
-        m for m in members
-        if m.get("disposable_income_delta") is not None
-        and m.get("disposable_income_delta_p05") is None
-    ]
-    if not bare:
-        return
-
-    lines = []
-    for m in bare:
-        bits = []
-        if m.get("households_weighted") is not None:
-            bits.append(f"{m['households_weighted']:,.0f} households")
-        bits.append(charts.format_delta(m["disposable_income_delta"], charts.CURRENCY) + " income")
-        if m.get("pct_better_off") is not None:
-            bits.append(f"{m['pct_better_off'] * 100:.0f}% better off")
-        lines.append(f"<li><b>{m['group']}</b> — {' · '.join(bits)}</li>")
-
-    st.markdown(
-        "<div class='ps-caveat'><b>Point estimates — no interval published for these.</b> "
-        "Metro subgroups carry p05/p95 on the income change; these national ones do not. "
-        f"<ul style='margin:.4rem 0 0 0'>{''.join(lines)}</ul></div>",
-        unsafe_allow_html=True,
-    )
-
-
-# ---------------------------------------------------------------------------
-# Section 4 — limitations
-# ---------------------------------------------------------------------------
-def section_limitations(scenario: dict) -> None:
-    st.header("4 · Limitations")
-    st.caption("Every one of these is a reason a number above could be wrong. They are the model's own disclosures.")
-
-    warnings = scenario.get("warnings") or []
-    if not warnings:
-        st.markdown(
-            "<div class='ps-caveat'>This scenario declares no limitations. "
-            "That is itself worth questioning.</div>",
-            unsafe_allow_html=True,
-        )
-    for w in warnings:
-        st.markdown(f"<div class='ps-caveat'>{w}</div>", unsafe_allow_html=True)
-
-    for note in scenario.get("_notes") or []:
-        st.markdown(
-            f"<div class='ps-caveat'><b>Contract note:</b> {note}</div>",
-            unsafe_allow_html=True,
-        )
-
-
-# ---------------------------------------------------------------------------
-# Section 5 — memo, and the numeric verification of it
-# ---------------------------------------------------------------------------
-def section_report(scenario: dict) -> None:
-    st.header("5 · Policy memo")
-    st.caption(
-        "The model writes the prose. It is given the scenario JSON and the "
-        "evidence records, and forbidden from producing any number that is not "
-        "already in them. The panel below checks that mechanically, afterwards."
-    )
-
-    if demo_mode():
-        st.caption(
-            "Memo generation is disabled in demo mode. The scenario figures and "
-            "their intervals above are unaffected — they never needed the model."
-        )
-        return
-
-    if st.button("Write the memo", key="run_report", disabled=demo_mode()):
-        clean = {k: v for k, v in scenario.items() if not k.startswith("_")}
-        with st.spinner("Writing…"):
-            st.session_state["report_outcome"] = generate_report(clean, load_evidence())
-
-    outcome = st.session_state.get("report_outcome")
-    if outcome is None:
-        return
-
-    if isinstance(outcome, ReportError):
-        st.markdown(
-            f"<div class='ps-caveat'><b>{outcome.message}</b>"
-            + (f"<br>{outcome.detail}" if outcome.detail else "")
-            + "</div>",
-            unsafe_allow_html=True,
-        )
-        return
-
-    _render_verification(outcome.verification)
-    st.markdown("---")
-    st.markdown(outcome.text)
-
-
-def _render_verification(v) -> None:
-    """Always rendered. "0 unverified numbers" is the result worth showing."""
-    st.subheader("Numeric verification")
-
-    if v.ok:
-        st.markdown(
-            f"<div class='ps-verify-ok'><b>{v.checked} numeric tokens checked · "
-            f"0 unverified.</b><br>Every number in the memo below appears in the "
-            f"scenario JSON or the evidence records it was given. Every cited "
-            f"evidence_id exists.</div>",
-            unsafe_allow_html=True,
-        )
-        return
-
-    st.markdown(
-        f"<div class='ps-verify-bad'><b>{v.checked} numeric tokens checked · "
-        f"{v.unverified_count} unverified.</b><br>These appear in the memo but "
-        f"not in the input. Treat them as unsourced.</div>",
-        unsafe_allow_html=True,
-    )
-    for f in v.findings:
-        st.markdown(
-            f"<div class='ps-caveat'><code>{f.token}</code> — {f.context}</div>",
-            unsafe_allow_html=True,
-        )
-    for eid in v.missing_evidence_ids:
-        st.markdown(
-            f"<div class='ps-caveat'><b>Unknown evidence_id cited:</b> "
-            f"<code>{eid}</code></div>",
-            unsafe_allow_html=True,
-        )
-
-
-@st.cache_data(show_spinner=False)
-def load_evidence() -> list:
-    path = Path(__file__).resolve().parent.parent / "data" / "evidence.json"
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:  # noqa: BLE001 — a missing evidence file must not kill the app
-        return []
-
-
-# ---------------------------------------------------------------------------
-def main() -> None:
-    state = sidebar()
-    inject_css(state["mode"])
-
-    try:
-        scenario = load_scenario(state["entry"]["path"])
-    except ScenarioError as exc:
-        st.error(f"Scenario failed validation: {exc}")
+if st.session_state.result is not None:
+    sc = st.session_state.result
+else:
+    entry = options[choice]
+    if entry.get("error"):
+        # A malformed file must not take the page down with it.
+        st.error(f"{entry.get('filename', 'scenario')} could not be read:\n\n"
+                 f"{entry['error']}")
         st.stop()
-        return
+    try:
+        sc = S.load_scenario(Path(entry["path"]))
+    except Exception as exc:                       # noqa: BLE001
+        st.error(f"{entry.get('filename', 'scenario')} could not be read:\n\n{exc}")
+        st.stop()
 
-    if demo_mode():
-        st.markdown(
-            "<div class='ps-demo'>DEMO MODE — reading precomputed scenarios only. "
-            "No network calls are made.</div>",
-            unsafe_allow_html=True,
-        )
+# ---- map ------------------------------------------------------------------
+by_metro = {m.get("metro"): m for m in (sc.get("by_metro") or [])}
+metro_args = []
+for c in CITIES:
+    m = by_metro.get(c["label"])
+    cpr = ((m or {}).get("impact") or {}).get("child_poverty_rate") or {}
+    metro_args.append({"metro": c["label"], "lon": c["lon"], "lat": c["lat"],
+                       "value": pct(cpr.get("median")) if m else None})
 
-    st.title(scenario.get("label", scenario.get("policy_id", "policy-sim")))
-    st.caption(
-        f"`{scenario.get('policy_id')}` · {scenario.get('n_seeds', '?')} seeds · "
-        f"read from `{Path(state['entry']['path']).name}` — no live model call"
-    )
+picked = _map(outline=[list(p) for p in US_OUTLINE], metros=metro_args,
+              selected=st.session_state.metro or "", key="map",
+              default=st.session_state.metro or "")
+picked = picked or None          # "" is the component's "national" sentinel
+if picked != st.session_state.metro:
+    st.session_state.metro = picked
+    st.rerun()
 
-    mode = st.session_state.get("map_mode", state["mode"])
-    section_map(scenario, mode)
+# ---- outcome box ----------------------------------------------------------
+metro = st.session_state.metro
+entry = by_metro.get(metro) if metro else None
+impact = (entry or sc).get("impact") or {}
+scope = metro if entry else "United States"
+flag = ('<span class="ps-flag">bands ~3.9x wider than national</span>'
+        if entry else ('<span class="ps-flag">simulated just now</span>'
+                       if sc.get("_live") else ""))
+cells = "".join(cell(k, l, f, kd, impact) for k, l, f, kd in ROWS)
+cells += support_cell(sc, entry)
+st.markdown(f'<div class="ps-card"><div class="ps-eyebrow">Outcome</div>'
+            f'<div class="ps-scope">{scope}{flag}</div>'
+            f'<div class="ps-grid">{cells}</div></div>', unsafe_allow_html=True)
 
-    st.divider()
-    section_policy_input()
-    st.divider()
-    section_impact(scenario, mode)
-    st.divider()
-    section_opinion(scenario, mode)
-    st.divider()
-    section_limitations(scenario)
-    st.divider()
-    section_report(scenario)
+# ---- policy box -----------------------------------------------------------
+st.write("")
+b1, b2 = st.columns([5, 1])
+with b1:
+    text = st.text_area("Policy", key="policy_text", height=76,
+                        label_visibility="collapsed",
+                        placeholder="Describe a policy — e.g. $300 a month per "
+                                    "child, phased out over $150k")
+with b2:
+    st.write("")
+    go = st.button("Run it", use_container_width=True, type="primary")
 
+if go:
+    parsed = local_parser.parse(text)
+    if not parsed.ok and HAS_KEY:
+        # The offline reader handles the phrasings people actually type. When it
+        # cannot, and a key is configured, Claude gets a turn -- still only to
+        # turn English into levers. It never produces a number.
+        try:
+            from app.parser import parse_policy
+            out = parse_policy(text)
+            if getattr(out, "ok", False):
+                lv = out.spec.levers.model_dump()
+                parsed = local_parser.LocalParse(
+                    levers={**local_parser.EMPTY, **lv},
+                    understood=[f"{k.replace('_', ' ')}: {v}"
+                                for k, v in lv.items() if v not in (0, 0.0, None)],
+                    notes=["Read by Claude; the offline reader could not parse it."],
+                    ok=True)
+        except Exception as exc:                    # noqa: BLE001
+            parsed.notes.append(f"Claude could not be reached ({exc}). "
+                                f"The offline reader's result stands.")
+    if not parsed.ok:
+        st.session_state.readback = ("err", parsed.notes)
+        st.session_state.result = None
+    elif not live.available():
+        st.session_state.readback = ("err", [live.why_unavailable()])
+    else:
+        with st.spinner("Simulating on 30,000 households…"):
+            st.session_state.result = live.run(parsed.levers)
+        st.session_state.metro = None
+        st.session_state.readback = ("ok", parsed.understood + parsed.notes)
+    st.rerun()
 
-main()
+rb = st.session_state.readback
+if rb:
+    kind, lines = rb
+    if kind == "ok":
+        st.markdown('<div class="ps-note"><b>Read as:</b> '
+                    + " · ".join(lines) + "</div>", unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="ps-card"><div class="ps-none">'
+                    + "<br>".join(lines) + "</div></div>", unsafe_allow_html=True)
+
+# ---- policy memo (optional; needs a key) ----------------------------------
+# The button lives in an expander so the default page stays clean. The memo and
+# its verification render at TOP LEVEL once one exists, because "0 unverified
+# numbers" is the point of the feature and burying it defeats it.
+with st.expander("Write a policy memo"):
+    st.markdown('<div class="ps-note">Claude writes the prose. It is given the '
+                'scenario JSON and the evidence records and forbidden from '
+                'producing any number that is not already in them; the check '
+                'below confirms that mechanically, afterwards. Every figure '
+                'above was produced without it.</div>', unsafe_allow_html=True)
+    if not HAS_KEY:
+        st.markdown('<div class="ps-note">No ANTHROPIC_API_KEY is set, so the '
+                    'memo is unavailable. Everything else on this page works '
+                    'without one.</div>', unsafe_allow_html=True)
+    if st.button("Write the memo", key="run_report", disabled=not HAS_KEY):
+        from app.report import generate_report
+        clean = {k: v for k, v in sc.items() if not str(k).startswith("_")}
+        with st.spinner("Writing…"):
+            st.session_state["report_outcome"] = generate_report(clean, [])
+
+outcome = st.session_state.get("report_outcome")
+if outcome is not None:
+    from app.report import ReportError
+    if isinstance(outcome, ReportError):
+        st.markdown(f'<div class="ps-card"><div class="ps-none">'
+                    f'{outcome.message}</div><div class="ps-note">'
+                    f'{outcome.detail or ""}</div></div>', unsafe_allow_html=True)
+    else:
+        v = outcome.verification
+        st.subheader("Numeric verification")
+        if v.ok:
+            st.markdown(f'<div class="ps-note"><b>{v.checked} numeric tokens '
+                        f'checked · 0 unverified.</b> Every number in the memo '
+                        f'appears in the scenario JSON or the evidence records '
+                        f'it was given, and every cited evidence id exists.'
+                        f'</div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div class="ps-note"><b>{v.checked} numeric tokens '
+                        f'checked · {v.unverified_count} unverified.</b> These '
+                        f'appear in the memo but not in the input. Treat them as '
+                        f'unsourced.</div>', unsafe_allow_html=True)
+            for f in v.findings:
+                st.markdown(f'<div class="ps-note"><code>{f.token}</code> — '
+                            f'{f.context}</div>', unsafe_allow_html=True)
+            for eid in v.missing_evidence_ids:
+                st.markdown(f'<div class="ps-note">cited evidence id '
+                            f'<code>{eid}</code> does not exist</div>',
+                            unsafe_allow_html=True)
+        st.markdown(outcome.text)
+
+with st.expander("What this model does not know"):
+    for w in (sc.get("warnings") or [])[:9]:
+        st.markdown(f'<div class="ps-note">• {w}</div>', unsafe_allow_html=True)

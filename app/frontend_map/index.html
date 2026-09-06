@@ -1,0 +1,231 @@
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: transparent; }
+  #wrap {
+    position: relative; border-radius: 16px; overflow: hidden;
+    background: #a8cfc5; border: 1px solid #cfe0d6;
+  }
+  canvas { display: block; width: 100%; height: auto; }
+  canvas.pick { cursor: pointer; }
+  #back {
+    position: absolute; left: 14px; top: 13px;
+    font: 600 12px/1 "DM Sans", -apple-system, "Segoe UI", sans-serif;
+    background: #f9f9ef; color: #31553f; border: 1px solid #dfe5d3;
+    border-radius: 8px; padding: 9px 13px; cursor: pointer;
+  }
+  #back:hover { background: #eef2e2; }
+  #back[hidden] { display: none; }
+</style>
+
+<div id="wrap">
+  <canvas id="map"></canvas>
+  <button id="back" hidden>&larr; National view</button>
+</div>
+
+<script>
+// Flat birds-eye map. The outline is the Census Bureau's dissolved national
+// boundary (see model/build_us_outline.py) in (lon, lat); it is projected here
+// with Albers Equal Area Conic, the projection real US maps use, which is why
+// the shape reads as the United States.
+const A = { lat1: 29.5, lat2: 45.5, lat0: 37.5, lon0: -96.0 };
+const R = Math.PI / 180;
+const n = (Math.sin(A.lat1 * R) + Math.sin(A.lat2 * R)) / 2;
+const C = Math.cos(A.lat1 * R) ** 2 + 2 * n * Math.sin(A.lat1 * R);
+const rho0 = Math.sqrt(C - 2 * n * Math.sin(A.lat0 * R)) / n;
+function albers(lon, lat) {
+  const th = n * (lon - A.lon0) * R;
+  const rho = Math.sqrt(Math.max(C - 2 * n * Math.sin(lat * R), 1e-9)) / n;
+  return [rho * Math.sin(th), rho0 - rho * Math.cos(th)];
+}
+
+let CFG = null, metros = [], selected = null, hover = null;
+let cam = { z: 1, x: 0, y: 0 }, tgt = { z: 1, x: 0, y: 0 }, raf = null;
+let cw = 0, ch = 0, dpr = 1, k = 1, ox = 0, oy = 0, poly = [];
+
+const cv = document.getElementById("map");
+const ctx = cv.getContext("2d");
+const back = document.getElementById("back");
+const lerp = (a, b, t) => a + (b - a) * t;
+
+function prepare() {
+  poly = CFG.outline.map(([lon, lat]) => albers(lon, lat));
+  const xs = poly.map(p => p[0]), ys = poly.map(p => p[1]);
+  CFG._b = { x0: Math.min(...xs), x1: Math.max(...xs),
+             y0: Math.min(...ys), y1: Math.max(...ys) };
+  for (const m of metros) {
+    const [x, y] = albers(m.lon, m.lat);
+    m._x = x; m._y = y;
+  }
+}
+
+function layout() {
+  const wrap = document.getElementById("wrap");
+  cw = wrap.clientWidth || 900;
+  const b = CFG._b;
+  const aspect = (b.x1 - b.x0) / (b.y1 - b.y0);
+  // Cap the height: at full width the map alone filled the screen and pushed
+  // the outcome box and the policy box below the fold. Everything has to be
+  // visible at once.
+  ch = Math.round(Math.min(cw / aspect, 452)) + 18;
+  dpr = window.devicePixelRatio || 1;
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
+  cv.style.height = ch + "px";
+  const pad = 30;
+  k = Math.min((cw - pad * 2) / (b.x1 - b.x0), (ch - pad * 2) / (b.y1 - b.y0));
+  ox = (cw - (b.x1 - b.x0) * k) / 2 - b.x0 * k;
+  oy = (ch - (b.y1 - b.y0) * k) / 2 + b.y1 * k;
+}
+
+// world -> screen, including the camera
+const sx = x => (x * k + ox - cw / 2) * cam.z + cw / 2 - cam.x * cam.z * k;
+const sy = y => (-y * k + oy - ch / 2) * cam.z + ch / 2 + cam.y * cam.z * k;
+
+function setTarget() {
+  const m = metros.find(v => v.metro === selected);
+  tgt = m ? { z: 2.6, x: m._x, y: m._y } : { z: 1, x: 0, y: 0 };
+  if (!raf) raf = requestAnimationFrame(tick);
+}
+
+function tick() {
+  cam.z = lerp(cam.z, tgt.z, 0.18);
+  cam.x = lerp(cam.x, tgt.x, 0.18);
+  cam.y = lerp(cam.y, tgt.y, 0.18);
+  const done = Math.abs(cam.z - tgt.z) < 0.004
+    && Math.abs(cam.x - tgt.x) < 0.002 && Math.abs(cam.y - tgt.y) < 0.002;
+  if (done) { cam = { ...tgt }; raf = null; } else raf = requestAnimationFrame(tick);
+  draw();
+}
+
+function draw() {
+  if (!CFG) return;
+  layout();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = "#a8cfc5";
+  ctx.fillRect(0, 0, cw, ch);
+
+  // land
+  ctx.beginPath();
+  poly.forEach(([x, y], i) => i ? ctx.lineTo(sx(x), sy(y)) : ctx.moveTo(sx(x), sy(y)));
+  ctx.closePath();
+  ctx.fillStyle = "#b6c994";
+  ctx.fill();
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = "#94ab77";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  for (const m of metros) if (m.metro !== selected) marker(m);
+  const sel = metros.find(v => v.metro === selected);
+  if (sel) marker(sel);
+
+  back.hidden = !selected;
+  Streamlit.setFrameHeight(ch + 2);
+}
+
+function marker(m) {
+  const x = sx(m._x), y = sy(m._y);
+  const on = m.metro === selected, hot = m.metro === hover;
+  const r = on ? 17 : hot ? 15 : 12;          // big enough to hit and to read
+
+  ctx.save();
+  ctx.globalAlpha = selected && !on ? 0.42 : 1;
+
+  ctx.beginPath();
+  ctx.ellipse(x, y + r * 0.95, r * 0.85, r * 0.32, 0, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(60,90,70,.18)";
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = on ? "#31553f" : "#3d6b50";
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "#f4f7e8";
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x, y, r * 0.34, 0, Math.PI * 2);
+  ctx.fillStyle = "#f4f7e8";
+  ctx.fill();
+
+  const fs = on || hot ? 15 : 13.5;
+  ctx.font = `650 ${fs}px "DM Sans","Segoe UI",sans-serif`;
+  ctx.textAlign = "center";
+  const label = (on || hot) && m.value ? `${m.metro}  ${m.value}` : m.metro;
+  const w = ctx.measureText(label).width;
+  const ly = y - r - 12;
+  ctx.fillStyle = "rgba(249,249,239,.96)";
+  ctx.beginPath();
+  ctx.roundRect(x - w / 2 - 9, ly - fs - 3, w + 18, fs + 12, 7);
+  ctx.fill();
+  ctx.strokeStyle = "#dfe5d3"; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = on ? "#31553f" : "#42604c";
+  ctx.fillText(label, x, ly + 1);
+  ctx.restore();
+}
+
+function hit(e) {
+  const b = cv.getBoundingClientRect();
+  const px = e.clientX - b.left, py = e.clientY - b.top;
+  let best = null, bd = 1e9;
+  for (const m of metros) {
+    const d = Math.hypot(px - sx(m._x), py - sy(m._y));
+    if (d < bd) { bd = d; best = m.metro; }
+  }
+  return bd < 30 ? best : null;
+}
+
+cv.addEventListener("mousemove", e => {
+  const h = hit(e);
+  cv.classList.toggle("pick", !!h);
+  if (h !== hover) { hover = h; if (!raf) draw(); }
+});
+cv.addEventListener("mouseleave", () => { if (hover) { hover = null; if (!raf) draw(); } });
+cv.addEventListener("click", e => {
+  const h = hit(e);
+  if (!h) return;
+  selected = h; hover = null; setTarget();
+  Streamlit.setComponentValue(selected);
+});
+back.addEventListener("click", () => {
+  // "" not null: Streamlit treats a null component value as
+  // "nothing sent" and falls back to the default, which is the
+  // metro we are trying to clear.
+  selected = null; setTarget(); Streamlit.setComponentValue("");
+});
+window.addEventListener("keydown", e => {
+  if (e.key === "Escape" && selected) {
+    selected = null; setTarget(); Streamlit.setComponentValue("");
+  }
+});
+window.addEventListener("resize", () => draw());
+
+const Streamlit = {
+  setComponentValue(v) {
+    parent.postMessage({ isStreamlitMessage: true,
+      type: "streamlit:setComponentValue", value: v, dataType: "json" }, "*");
+  },
+  setFrameHeight(h) {
+    parent.postMessage({ isStreamlitMessage: true,
+      type: "streamlit:setFrameHeight", height: h }, "*");
+  },
+  ready() {
+    parent.postMessage({ isStreamlitMessage: true,
+      type: "streamlit:componentReady", apiVersion: 1 }, "*");
+  },
+};
+
+addEventListener("message", ev => {
+  if (!ev.data || ev.data.type !== "streamlit:render") return;
+  const a = ev.data.args || {};
+  CFG = { outline: a.outline || [] };
+  metros = a.metros || [];
+  if (a.selected !== undefined && a.selected !== selected) {
+    selected = a.selected; setTarget();
+  }
+  prepare();
+  draw();
+});
+
+Streamlit.ready();
+</script>

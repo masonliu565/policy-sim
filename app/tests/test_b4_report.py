@@ -160,4 +160,5 @@ def test_report_error_does_not_break_the_page(scenario_dir):
     at = _app(ReportError("Memo generation timed out after 60s.", "Figures unaffected."),
               scenario_dir)
     assert "timed out" in _blob(at)
-    assert "2 · Material impact" in [h.value for h in at.main.header]
+    # The page must survive a memo failure: the outcome box is still there.
+    assert "Child poverty rate" in _blob(at)

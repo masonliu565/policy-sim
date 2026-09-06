@@ -25,20 +25,19 @@ This is enforced by construction, not by convention:
 | `app/report.py` | yes — writes the memo | no. Every number it emits is checked back against the input |
 
 `app/` never imports from `model/`. The demo reads precomputed JSON, so the
-scripted path has no dependency on the live engine.
+app runs the same engine that produced the precomputed files, locally.
 
 ### The interval rule
 
-`app/charts.py` has exactly one text formatter, `interval_text`, and it always
-emits the p05–p95 band alongside the median. There is no function that renders
-a point estimate. Bar widths are never normalised across charts — a metro
-interval is wider than a national one because a metro subsample carries more
-sampling error, and equalising the bars would hide the thing the bands exist to
-show.
+Every figure in the outcome box is rendered with its p05-p95 band beside it.
+There is no code path that renders a median on its own. When an interval has
+zero width the box says "no spread" rather than presenting a point estimate as
+a confident one.
 
-Where the scenario contract supplies a bare number with no band
-(`pct_better_off`, `disposable_income_delta`), it is quarantined in a labelled
-"no interval published" block rather than shown beside the banded figures.
+Metro bands are wider than national ones and are never rescaled to match. A
+metro carries about 2,000 households against 30,000, so its sampling error is
+genuinely larger; equalising the bars would hide the exact thing the bands
+exist to show, so the metro view labels itself instead.
 
 ### The numeric verification panel
 
@@ -55,52 +54,68 @@ is the point**.
 
 ```bash
 python -m pip install -r requirements.txt
-POLICY_SIM_DEMO_MODE=1 python -m streamlit run app/main.py
+python -m streamlit run app/main.py
 ```
 
-Then open <http://localhost:8501>.
+Then open <http://localhost:8501>. That is the whole setup. No API key, no
+account, no external service.
 
-Demo mode reads `scenarios/*.json` and makes **zero network calls** — it cannot
-be broken by wifi, a rate limit or an expired key. This is the mode to present
-in.
+Four things on screen: the map, one outcome box, the policy box, and reset.
 
-Click any of the six metro markers to zoom into that metro; the right-hand
-panel switches to figures computed on that metro's own subpopulation, not
-scaled down from the national ones, and says so. "National view" zooms back
-out.
+- **Click a metro pin** to zoom in. The outcome box switches to figures computed
+  on that metro's own subpopulation -- not scaled down from the national ones --
+  and says that its bands are legitimately ~3.9x wider. `Back to national`, or
+  `Esc`, zooms out.
+- **Type a policy in plain English and press Run it.** The description is read
+  offline by `app/local_parser.py`, and the real microsimulation runs locally
+  over the 30,000-household sample in about two seconds. The line under the box
+  says exactly what it understood, including any assumption it had to make.
+- **Reset** clears the metro, the typed policy and the result.
+
+### It works with no network
+
+Nothing on that path touches the internet. The parser is regular expressions,
+the numbers come from local numpy over a local parquet file, and the map is a
+canvas. `app/tests/test_app_ui.py::test_the_app_needs_no_network` renders the
+whole page with `socket.connect` patched to raise, which is the wifi-off run as
+a test.
+
+There is no "demo mode" any more. There was, and its banner read as though the
+build were crippled, when the truth is the opposite: the app has no external
+dependency to lose.
+
+### An API key is optional
+
+```bash
+echo 'ANTHROPIC_API_KEY=sk-...' > .env
+```
+
+With a key present, two things become available, neither of which produces a
+number:
+
+- if the offline reader cannot parse an unusual phrasing, Claude gets a turn at
+  turning the English into levers;
+- **Write a policy memo** drafts the prose, and the numeric verification panel
+  then checks every numeric token in it against the simulation output and the
+  evidence records. "0 unverified numbers" is the point of that panel.
 
 ### The map
 
 The outline is the U.S. Census Bureau's dissolved national boundary
 (`cb_2023_us_nation_20m`), simplified to 338 points by
-`model/build_us_outline.py`. City markers sit at the population-weighted
-centroid of the tracts inside each metro's PUMAs, from the 2020
-centers-of-population file — not coordinates typed from memory. Re-run:
+`model/build_us_outline.py` and drawn in Albers Equal Area Conic, the projection
+US maps actually use. City pins sit at the population-weighted centroid of the
+tracts inside each metro's PUMAs, from the 2020 centers-of-population file --
+not coordinates typed from memory. Regenerate with:
 
 ```bash
 python model/build_us_outline.py
 ```
 
-An earlier version traced the coastline by hand at about sixty points. Tiled,
-it did not read as the United States, which is the whole job of a map.
-
-### With an API key
-
-The scenario files need no key. The plain-English policy box and the generated
-memo are the only components that reach out:
-
-```bash
-echo 'ANTHROPIC_API_KEY=sk-...' > .env
-python -m streamlit run app/main.py          # note: no DEMO_MODE
-```
-
-Without a key the policy box returns a readable message rather than a
-traceback, so leaving it unset is a safe way to present.
-
 ### Checks
 
 ```bash
-python -m pytest app/tests -q       # 107 app tests
+python -m pytest app/tests -q       # 64 tests
 python app/tests/smoke_demo.py      # drives the running app in a browser
 python model/diagnostics.py         # 25 engine invariants + MCMC convergence
 bash model/reproduce.sh             # rebuild every artefact from raw PUMS
@@ -111,7 +126,6 @@ bash model/reproduce.sh             # rebuild every artefact from raw PUMS
 | Variable | Default | Effect |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | — | Required for the parser and the memo only |
-| `POLICY_SIM_DEMO_MODE` | off | Scenario files only, no network |
 | `POLICY_SIM_MODEL` | `claude-opus-5` | Model for parsing and the memo |
 | `POLICY_SIM_PARSER_TIMEOUT` | `30` | Seconds before the parser falls back |
 | `POLICY_SIM_REPORT_TIMEOUT` | `60` | Seconds before memo generation gives up |
@@ -168,11 +182,11 @@ Stated here because they change how the support estimates should be read:
 ## Layout
 
 - `model/` simulation, validation, poststratification, backtests (Track A)
-- `app/` streamlit demo (Track B)
+- `app/` the streamlit app: map, outcome box, offline policy reader
 - `data/raw/` downloaded ACS PUMS (gitignored)
 - `data/processed/` sampled population parquet
 - `data/evidence.json` hand-curated survey crosstabs (tracked)
-- `scenarios/` precomputed output JSON — this is what the demo reads
+- `scenarios/` precomputed output JSON — the starting scenarios
 - `docs/` plan, pre-registration, charts
 
 Build plan: [docs/plan.md](docs/plan.md)
