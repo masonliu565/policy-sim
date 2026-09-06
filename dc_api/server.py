@@ -58,6 +58,7 @@ from dc_api.interpret import interpret as interpret_local  # noqa: E402
 from dc_api import interpret_claude  # noqa: E402
 from dc_api import facts as F  # noqa: E402
 from dc_api import reason as R  # noqa: E402
+from dc_api import dc_code as LAW  # noqa: E402
 
 
 def interpret(question: str):
@@ -817,12 +818,14 @@ def answer_tax_policy(spec, question):
     lo, hi = burden[0], burden[-1]
     side = tax_side_effects(sim, sim["understood"]) or \
         tax_side_effects_measured(sim)
+    statute = LAW.for_kind("tax_policy") or {"cite": "47-1806.03"}
 
     return result(
         spec, question,
         title=f"${abs(rev['median']) / 1e9:,.2f}B a year",
         explanation=(
-            f"Read as: {sim['understood']}. Applied to {sim['n_households']:,} "
+            f"Read as: {sim['understood']}. This amends the rate table in "
+            f"D.C. Code {statute['cite']}. Applied to {sim['n_households']:,} "
             f"DC household records from the ACS 2024 PUMS, using the published "
             f"DC schedule and the standard deduction. It {verb} "
             f"${abs(rev['median']) / 1e9:,.2f} billion a year against a current "
@@ -866,7 +869,8 @@ def answer_tax_policy(spec, question):
                        "average change in disposable income across the whole "
                        "group, including those who owe nothing extra.",
             extra_tables=[revenue_source_table(burden)]),
-        evidence=[OTR_EVIDENCE] + evidence_for("household_income"),
+        evidence=[LAW.statute_evidence(statute["cite"], statute.get("heading", "")),
+                  OTR_EVIDENCE] + evidence_for("household_income"),
         missingEvidence=[
             "Polling on a DC income tax increase. The opinion evidence covers "
             "cash transfers only, so no approval or disapproval figure is "
@@ -882,7 +886,9 @@ def answer_tax_policy(spec, question):
             OPINION_COVERAGE,
             "The DC schedule is the published one, retrieved from the Office "
             "of Tax and Revenue and checked at import: every bracket's base "
-            "amount must equal the tax accumulated below it.",
+            "amount must equal the tax accumulated below it. It is also "
+            f"checked against the codified statute, D.C. Code {statute['cite']}, "
+            "which is a second and independent source for the same brackets.",
         ] + ([
             "The side-effects paragraph is reasoning, not measurement. It is "
             "written against the figures above and may not state any number "
@@ -924,7 +930,10 @@ def answer_reasoned(spec, question, carried=None):
     body = " ".join(x for x in (got.get("answer"), got.get("mechanism"),
                                 got.get("affected")) if x).strip()
     used = [by_id[i] for i in got.get("usedFactIds", []) if i in by_id] or pack[:4]
+    law = LAW.find(question)
     seen, ev = set(), []
+    for x in law:
+        ev.append(LAW.statute_evidence(x["cite"], x["heading"]))
     for f in used:
         for kind in fact_source_kinds(f["source"]):
             if kind in seen:
@@ -933,6 +942,14 @@ def answer_reasoned(spec, question, carried=None):
             ev += evidence_for(kind)
 
     limits = []
+    if law:
+        limits.append(
+            "Existing DC law this would sit on top of: "
+            + "; ".join(f"D.C. Code {x['cite']}, {x['heading'].rstrip('.')}"
+                        for x in law)
+            + ". These are the sections whose headings match the question, from "
+              "the Council's codified index; they are a starting point for "
+              "drafting, not a legal opinion on what would need to change.")
     if got.get("measured"):
         limits.append("Measured, not inferred: " + "; ".join(got["measured"]) + ".")
     if got.get("reasoned"):

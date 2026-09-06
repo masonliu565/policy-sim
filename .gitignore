@@ -41,3 +41,8 @@ docs/screenshots/body_*.txt
 # Vendored upstream atlas (kp224/simcity), built. 109MB of bundled DC map
 # assets; cloned and built by dc_api/setup_frontend.sh rather than committed.
 /frontend/
+
+# The Council's codified DC Code, cloned by dc_api/setup_dc_code.sh.
+# Large, and upstream. The committed artefact is the index it produces,
+# data/dc_code/, not the corpus.
+/dc_code/
