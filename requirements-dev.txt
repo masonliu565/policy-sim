@@ -1,0 +1,3 @@
+# Dev/test only. Not needed to run the demo.
+-r requirements.txt
+pytest>=8.3

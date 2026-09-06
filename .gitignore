@@ -29,3 +29,6 @@ Thumbs.db
 !/data/processed/*.csv
 
 .env
+
+# pytest
+.pytest_cache/
