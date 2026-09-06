@@ -9,13 +9,7 @@ one carrying the 5th–95th percentile band from a 500-seed run. Nothing is
 rendered as a bare point estimate, and a verification pass checks the generated
 memo against the simulation output number by number.
 
-![policy-sim](docs/screenshots/birdseye.png)
-
-Click any metro to fly down into it. The local view is a unit chart — one house
-per child in a hundred, split by what the policy does to them, straight from
-that metro's own numbers:
-
-![local view](docs/screenshots/local.png)
+![policy-sim](docs/screenshots/app_national.png)
 
 ## The architecture rule
 
@@ -59,32 +53,36 @@ is the point**.
 
 ## Run it
 
-Two interfaces read the same scenario files. Both are demo-safe: they make zero
-network calls and cannot be broken by wifi, a rate limit or an expired key.
-
 ```bash
-# one-time
 python -m pip install -r requirements.txt
-
-# the presentation UI -- map, outcome box, policy box, reset, and nothing else
-POLICY_SIM_DEMO_MODE=1 python -m streamlit run app/minimal.py
-
-# the full UI -- adds the policy memo, the numeric verification panel,
-# per-group breakdowns and the limitations list
 POLICY_SIM_DEMO_MODE=1 python -m streamlit run app/main.py
 ```
 
-Then open the URL Streamlit prints (http://localhost:8501 by default).
+Then open <http://localhost:8501>.
 
-**`app/minimal.py` is the one to present.** A hand-drawn continental USA, one
-outcome box, the policy text box and reset. Click any of the six metros to swap
-the outcome box to that metro's own numbers, computed on the metro
-subpopulation rather than scaled down from the national figure. Click again, or
-"Back to national", to return.
+Demo mode reads `scenarios/*.json` and makes **zero network calls** — it cannot
+be broken by wifi, a rate limit or an expired key. This is the mode to present
+in.
 
-**`app/main.py` is the one to answer questions from.** Same data, everything
-shown: support by group, the three evidence states, the generated memo and the
-verification panel, and the model's full list of its own limitations.
+Click any of the six metro markers to zoom into that metro; the right-hand
+panel switches to figures computed on that metro's own subpopulation, not
+scaled down from the national ones, and says so. "National view" zooms back
+out.
+
+### The map
+
+The outline is the U.S. Census Bureau's dissolved national boundary
+(`cb_2023_us_nation_20m`), simplified to 338 points by
+`model/build_us_outline.py`. City markers sit at the population-weighted
+centroid of the tracts inside each metro's PUMAs, from the 2020
+centers-of-population file — not coordinates typed from memory. Re-run:
+
+```bash
+python model/build_us_outline.py
+```
+
+An earlier version traced the coastline by hand at about sixty points. Tiled,
+it did not read as the United States, which is the whole job of a map.
 
 ### With an API key
 
@@ -93,18 +91,19 @@ memo are the only components that reach out:
 
 ```bash
 echo 'ANTHROPIC_API_KEY=sk-...' > .env
-python -m streamlit run app/minimal.py      # note: no DEMO_MODE
+python -m streamlit run app/main.py          # note: no DEMO_MODE
 ```
 
 Without a key the policy box returns a readable message rather than a
 traceback, so leaving it unset is a safe way to present.
 
-### Reproducing the numbers
+### Checks
 
 ```bash
-python model/diagnostics.py     # 25 engine invariants + MCMC convergence
-python model/reproduce.sh       # rebuild every artefact from raw PUMS, byte-for-byte
-python -m pytest app/tests -q   # 107 app tests
+python -m pytest app/tests -q       # 107 app tests
+python app/tests/smoke_demo.py      # drives the running app in a browser
+python model/diagnostics.py         # 25 engine invariants + MCMC convergence
+bash model/reproduce.sh             # rebuild every artefact from raw PUMS
 ```
 
 ### Environment variables

@@ -189,7 +189,11 @@ function buildTiles() {
       if (!pointInPoly(px, py, CFG.outline)) continue;
       const r = relief(ix, iy);
       // Grid y is inverted so north renders to the back of the scene.
-      tiles.push({ gx: ix, gy: ny - iy, lift: r > 0.45 ? 1 : 0, green: r > 0.02 });
+      // Relief runs about -1.5..1.5. Thresholding green at 0.02 made half the
+      // tiles green in a sine pattern, which read as camouflage and broke up
+      // the country's silhouette. Green is now a sparse accent on a beige
+      // landmass, so the shape of the United States is what you see first.
+      tiles.push({ gx: ix, gy: ny - iy, lift: r > 1.12 ? 1 : 0, green: r > 0.86 });
     }
   }
   tiles.sort((a, b2) => (a.gx + a.gy) - (b2.gx + b2.gy));
