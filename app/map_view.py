@@ -44,13 +44,14 @@ def _domain(values: List[float], pad: float = 0.14) -> List[float]:
 def build_domains(scenario: Dict[str, Any]) -> Dict[str, List[float]]:
     """One shared scale per outcome, spanning national AND every metro.
 
-    This is the honest choice and the whole reason the metro view is worth
-    showing: a metro interval is wider than the national one, and putting both
-    on the same axis is what makes that visible. Giving each panel its own
-    axis would normalise the bar widths and hide it.
+    The contract puts it plainly: metro intervals are legitimately ~3.9x wider
+    than national ones, because a metro carries ~2,000 households against
+    30,000. Drawing both on one axis is what makes that visible. Giving each
+    panel its own autoscaled axis would render the two bands the same width and
+    delete the finding.
     """
     domains: Dict[str, List[float]] = {}
-    metros = (scenario.get("by_metro") or {}).values()
+    metros = (scenario.get("by_metro_index") or {}).values()
 
     for key, band in (scenario.get("impact") or {}).items():
         pts = [band["p05"], band["p95"], band["median"]]
@@ -67,15 +68,69 @@ def build_domains(scenario: Dict[str, Any]) -> Dict[str, List[float]]:
 
 
 def build_support_domain(scenario: Dict[str, Any]) -> List[float]:
+    """Support axis, over the groups that actually have a support estimate."""
     pts: List[float] = []
-    for g in (scenario.get("opinion") or {}).get("by_group", []):
-        pts += [g["support"]["p05"], g["support"]["p95"]]
-    for m in (scenario.get("by_metro") or {}).values():
-        for g in m.get("by_group", []):
+    for g in (scenario.get("opinion") or {}).get("by_group") or []:
+        if g.get("support"):
             pts += [g["support"]["p05"], g["support"]["p95"]]
-        if "support" in m:
-            pts += [m["support"]["p05"], m["support"]["p95"]]
+    overall = (scenario.get("opinion") or {}).get("overall_support")
+    if overall:
+        pts += [overall["p05"], overall["p95"]]
     return _domain(pts) if pts else [0.0, 1.0]
+
+
+def build_delta_domain(scenario: Dict[str, Any]) -> List[float]:
+    """Shared axis for disposable-income change, national and metro together.
+
+    The contract now ships p05/p95 alongside every disposable_income_delta, so
+    these render as intervals like everything else rather than as bare points.
+    """
+    pts: List[float] = []
+
+    def add(rows):
+        for r in rows or []:
+            for k in ("disposable_income_delta_p05", "disposable_income_delta",
+                      "disposable_income_delta_p95"):
+                if r.get(k) is not None:
+                    pts.append(r[k])
+
+    add((scenario.get("opinion") or {}).get("by_group"))
+    for m in (scenario.get("by_metro_index") or {}).values():
+        add(m.get("top_subgroups"))
+    return _domain(pts) if pts else [0.0, 1.0]
+
+
+def _delta_band(row: Dict[str, Any]) -> Optional[Dict[str, float]]:
+    """The income-change interval, when the scenario provides one."""
+    med = row.get("disposable_income_delta")
+    lo = row.get("disposable_income_delta_p05")
+    hi = row.get("disposable_income_delta_p95")
+    if med is None:
+        return None
+    if lo is None or hi is None:
+        return None  # a bare point estimate is not rendered as a band
+    return {"median": med, "p05": lo, "p95": hi, "baseline": 0.0}
+
+
+def _group_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Normalise national by_group and metro top_subgroups into one shape."""
+    out = []
+    for r in rows or []:
+        out.append({
+            "group_type": r.get("group_type", ""),
+            "group": r.get("group", ""),
+            "support": r.get("support"),
+            "evidence_status": r.get("evidence_status", "ok" if r.get("support") else None),
+            "evidence_coverage": r.get("evidence_coverage"),
+            "evidence_ids": r.get("evidence_ids") or [],
+            "households_weighted": r.get("households_weighted"),
+            "sample_n": r.get("sample_n"),
+            "low_sample": bool(r.get("low_sample")),
+            "pct_better_off": r.get("pct_better_off"),
+            "delta": _delta_band(r),
+            "delta_point": r.get("disposable_income_delta"),
+        })
+    return out
 
 
 def _rank_groups(groups: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -84,33 +139,39 @@ def _rank_groups(groups: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     Groups without that field keep their original order behind the ranked ones
     rather than being scored on something invented.
     """
-    with_delta = [g for g in groups if g.get("disposable_income_delta") is not None]
-    without = [g for g in groups if g.get("disposable_income_delta") is None]
-    with_delta.sort(key=lambda g: abs(g["disposable_income_delta"]), reverse=True)
+    with_delta = [g for g in groups if g.get("delta_point") is not None]
+    without = [g for g in groups if g.get("delta_point") is None]
+    with_delta.sort(key=lambda g: abs(g["delta_point"]), reverse=True)
     return with_delta + without
 
 
 def build_payload(scenario: Dict[str, Any], stack: List[str]) -> Dict[str, Any]:
     opinion = scenario.get("opinion") or {}
-    by_metro = scenario.get("by_metro") or {}
 
-    # Rank metro groups the same way, without touching the source dict.
     metros = {}
-    for key, block in by_metro.items():
-        metros[key] = dict(block)
-        if block.get("by_group"):
-            metros[key]["by_group"] = _rank_groups(block["by_group"])
+    for key, block in (scenario.get("by_metro_index") or {}).items():
+        metros[key] = {
+            "metro": block.get("metro"),
+            "impact": block.get("impact") or {},
+            "households_weighted": block.get("households_weighted"),
+            "sample_n": block.get("sample_n"),
+            "low_sample": bool(block.get("low_sample")),
+            "groups": _rank_groups(_group_rows(block.get("top_subgroups"))),
+        }
 
     return {
         "label": scenario.get("label", scenario.get("policy_id", "")),
         "policy_id": scenario.get("policy_id"),
         "n_seeds": scenario.get("n_seeds"),
         "impact": scenario.get("impact") or {},
-        "by_group": _rank_groups(opinion.get("by_group") or []),
+        "groups": _rank_groups(_group_rows(opinion.get("by_group"))),
         "overall_support": opinion.get("overall_support"),
+        "in_support": scenario.get("in_support", True),
+        "nearest_policies": scenario.get("nearest_policies") or [],
         "by_metro": metros,
         "domains": build_domains(scenario),
         "support_domain": build_support_domain(scenario),
+        "delta_domain": build_delta_domain(scenario),
         "units": {k: charts.infer_unit(k) for k in (scenario.get("impact") or {})},
         "labels": {k: IMPACT_LABELS.get(k, k.replace("_", " ").capitalize())
                    for k in (scenario.get("impact") or {})},

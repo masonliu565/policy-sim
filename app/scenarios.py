@@ -66,14 +66,21 @@ def _require(obj: Dict[str, Any], keys, where: str) -> None:
 
 
 def validate(scenario: Dict[str, Any], where: str = "scenario") -> List[str]:
-    """Check the contract. Returns non-fatal notes; raises on violations."""
+    """Check the contract in docs/output_contract.md. Returns non-fatal notes.
+
+    Three states from that contract are legitimate and must not raise:
+      - opinion.overall_support may be null (not enough evidence nationally)
+      - a by_group entry's support may be null with an evidence_status
+      - in_support may be false, in which case every opinion figure is null
+        while impact stays fully valid
+    """
     notes: List[str] = []
 
     for key in ("policy_id", "label", "impact", "opinion", "warnings"):
         if key not in scenario:
             raise ScenarioError(f"{where}: missing top-level key {key!r}")
 
-    for name, band in scenario["impact"].items():
+    for name, band in (scenario["impact"] or {}).items():
         _require(band, IMPACT_KEYS, f"{where}: impact.{name}")
         if not (band["p05"] <= band["median"] <= band["p95"]):
             notes.append(
@@ -81,26 +88,45 @@ def validate(scenario: Dict[str, Any], where: str = "scenario") -> List[str]:
                 f"(p05={band['p05']}, median={band['median']}, p95={band['p95']})"
             )
 
-    opinion = scenario["opinion"]
-    if "overall_support" in opinion:
-        _require(opinion["overall_support"], SUPPORT_KEYS, f"{where}: opinion.overall_support")
+    opinion = scenario.get("opinion") or {}
+    overall = opinion.get("overall_support")
+    if overall is not None:
+        _require(overall, SUPPORT_KEYS, f"{where}: opinion.overall_support")
 
-    for i, group in enumerate(opinion.get("by_group", [])):
+    for i, group in enumerate(opinion.get("by_group") or []):
         tag = f"{where}: opinion.by_group[{i}]"
-        for key in ("group_type", "group", "support"):
+        for key in ("group_type", "group"):
             if key not in group:
                 raise ScenarioError(f"{tag}: missing {key!r}")
-        _require(group["support"], SUPPORT_KEYS, f"{tag}.support")
-        if not group.get("evidence_ids"):
-            notes.append(f"opinion.by_group[{i}] ({group['group']}): no evidence_ids")
+        support = group.get("support")
+        if support is not None:
+            _require(support, SUPPORT_KEYS, f"{tag}.support")
+        elif group.get("evidence_status") in (None, "ok"):
+            notes.append(
+                f"opinion.by_group[{i}] ({group['group']}): support is null but "
+                f"evidence_status is {group.get('evidence_status')!r}"
+            )
+        if group.get("evidence_ids") is None:
+            notes.append(f"opinion.by_group[{i}] ({group['group']}): evidence_ids is null")
 
-    # by_metro is optional — A7 may not have produced it yet.
-    for raw_key, block in (scenario.get("by_metro") or {}).items():
-        tag = f"{where}: by_metro.{raw_key}"
+    for i, block in enumerate(scenario.get("by_metro") or []):
+        tag = f"{where}: by_metro[{i}]"
+        if "metro" not in block:
+            raise ScenarioError(f"{tag}: missing 'metro'")
         for name, band in (block.get("impact") or {}).items():
-            _require(band, IMPACT_KEYS, f"{tag}.impact.{name}")
-        if "support" in block:
-            _require(block["support"], SUPPORT_KEYS, f"{tag}.support")
+            _require(band, IMPACT_KEYS, f"{tag} ({block['metro']}): impact.{name}")
+            # A collapsed interval claims perfect certainty on a 2,000-household
+            # subsample, which is not credible. Surface it rather than drawing
+            # it as an ordinary confident estimate.
+            if band["p05"] == band["p95"]:
+                notes.append(
+                    f"by_metro {block['metro']}: {name} has a zero-width interval "
+                    f"(p05 == p95 == {band['p05']:.6g}) — shown as a point, not a band"
+                )
+
+    if scenario.get("in_support") is False and not scenario.get("nearest_policies"):
+        notes.append("in_support is false but nearest_policies is empty — "
+                     "there is nothing to offer in place of the refusal")
 
     return notes
 
@@ -115,9 +141,12 @@ def load_scenario(path: Path) -> Dict[str, Any]:
     scenario["_notes"] = validate(scenario, where=Path(path).name)
     scenario["_path"] = str(path)
 
-    # Canonicalise metro keys once, on load, so the view layer never has to.
-    if scenario.get("by_metro"):
-        scenario["by_metro"] = {metro_key(k): v for k, v in scenario["by_metro"].items()}
+    # by_metro is a LIST in the contract, keyed by a display label ("New York").
+    # Index it once here so the map can look a metro up by the key the geometry
+    # uses ("new_york"), without discarding the list the contract specifies.
+    scenario["by_metro_index"] = {
+        metro_key(b["metro"]): b for b in (scenario.get("by_metro") or []) if b.get("metro")
+    }
 
     return scenario
 
@@ -134,6 +163,10 @@ def list_scenarios(directory: Optional[Path] = None) -> List[Dict[str, str]]:
         entry = {"path": str(path), "filename": path.name, "error": ""}
         try:
             scenario = json.loads(path.read_text())
+            # /scenarios also holds backtest.json, which is A6 output rather
+            # than a policy scenario. Identify it by shape, not by filename.
+            if "policy_id" not in scenario or "impact" not in scenario:
+                continue
             entry["policy_id"] = scenario.get("policy_id", path.stem)
             entry["label"] = scenario.get("label", path.stem)
         except Exception as exc:  # noqa: BLE001 - surfaced in the UI, never raised

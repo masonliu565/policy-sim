@@ -413,17 +413,31 @@ GROUP_TYPE_LABELS = {
 def section_opinion(scenario: dict, mode: str) -> None:
     st.header("3 · Support by group")
 
-    opinion = scenario.get("opinion", {})
+    opinion = scenario.get("opinion") or {}
+
+    if scenario.get("in_support") is False:
+        _render_out_of_support(scenario)
+
     overall = opinion.get("overall_support")
     if overall:
         panel(
             "<div style='font-size:1.05rem'>Overall support</div>"
             f"<div class='ps-metric'>{charts.interval_text(overall, charts.PERCENT)}</div>"
-            "<div class='ps-delta'>poststratified from survey crosstabs; "
-            "band combines crosstab sampling error with population sampling error</div>"
+            "<div class='ps-delta'>poststratified from survey crosstabs; band combines "
+            "crosstab sampling error with population sampling error</div>"
+        )
+    else:
+        st.markdown(
+            "<div class='ps-caveat'><b>Overall support: insufficient evidence.</b> "
+            + ("The policy lies outside the evidence base, so no national support "
+               "figure is produced. The material impact above is unaffected."
+               if scenario.get("in_support") is False else
+               "There is not enough evidence to support a national number.")
+            + "</div>",
+            unsafe_allow_html=True,
         )
 
-    groups = opinion.get("by_group", [])
+    groups = opinion.get("by_group") or []
     if not groups:
         st.info("This scenario carries no subgroup opinion estimates.")
         return
@@ -434,62 +448,109 @@ def section_opinion(scenario: dict, mode: str) -> None:
 
     for gtype, members in by_type.items():
         st.subheader(GROUP_TYPE_LABELS.get(gtype, gtype.replace("_", " ").title()))
-        rows = [
-            {
-                "label": m["group"],
-                "p05": m["support"]["p05"],
-                "median": m["support"]["median"],
-                "p95": m["support"]["p95"],
-                "baseline": None,
-            }
-            for m in members
-        ]
-        fig = charts.interval_figure(
-            rows, unit=charts.PERCENT, mode=mode,
-            xlabel="support (bar = 5th–95th percentile)", show_baseline=False, width=9.0,
-        )
-        st.pyplot(fig, width='stretch')
-        charts.close(fig)
+
+        withband = [m for m in members if m.get("support")]
+        if withband:
+            rows = [
+                {"label": m["group"] + (" (low sample)" if m.get("low_sample") else ""),
+                 "p05": m["support"]["p05"], "median": m["support"]["median"],
+                 "p95": m["support"]["p95"], "baseline": None}
+                for m in withband
+            ]
+            fig = charts.interval_figure(
+                rows, unit=charts.PERCENT, mode=mode,
+                xlabel="support (bar = 5th–95th percentile)",
+                show_baseline=False, width=9.0,
+            )
+            st.pyplot(fig, width='stretch')
+            charts.close(fig)
 
         for m in members:
-            st.markdown(
-                f"**{m['group']}** — support "
-                f"{charts.interval_text(m['support'], charts.PERCENT)} · "
-                f"evidence: `{'`, `'.join(m.get('evidence_ids') or ['none'])}`"
-            )
+            _render_group_line(m)
 
         _uninterval_note(members)
 
 
-def _uninterval_note(members: list) -> None:
-    """Fields the scenario gives as bare numbers, shown as such and no other way.
+def _render_out_of_support(scenario: dict) -> None:
+    """State 3. The model declining to answer is the feature, so make it look
+    deliberate rather than like a missing value."""
+    near = scenario.get("nearest_policies") or []
+    rows = "".join(
+        f"<li><b>{n.get('label', n.get('policy_id'))}</b>"
+        + (f" ({n['year']})" if n.get("year") else "")
+        + (f" — lever-space distance {n['distance']:.1f}, cutoff 1.5"
+           if n.get("distance") is not None else "")
+        + (f"<br><span style='font-size:.92em'>{n['source']}</span>" if n.get("source") else "")
+        + "</li>"
+        for n in near
+    )
+    st.markdown(
+        "<div class='ps-caveat'><b>This policy is outside the evidence base.</b> "
+        "No historical policy is close enough in lever-space to say anything about "
+        "opinion, so every support figure below is withheld rather than guessed. "
+        "The material impact in section 2 is unaffected — the microsimulation does "
+        "not need opinion evidence."
+        + (f"<br><br><b>What there is data on:</b><ul>{rows}</ul>" if rows else "")
+        + "</div>",
+        unsafe_allow_html=True,
+    )
 
-    households_weighted, disposable_income_delta and pct_better_off arrive
-    without p05/p95. Rendering them beside the banded figures would imply a
-    precision the scenario does not claim, so they are quarantined here and
-    labelled. This block is the honest alternative to either faking a band or
-    dropping the data.
+
+def _render_group_line(m: dict) -> None:
+    low = " · **low sample**" + (f" (n={m['sample_n']})" if m.get("sample_n") else "") \
+        if m.get("low_sample") else ""
+    ev = m.get("evidence_ids") or []
+    evtxt = f" · evidence: `{'`, `'.join(ev)}`" if ev else ""
+
+    if m.get("support"):
+        st.markdown(
+            f"**{m['group']}** — support "
+            f"{charts.interval_text(m['support'], charts.PERCENT)}{low}{evtxt}"
+        )
+        return
+
+    cov = m.get("evidence_coverage")
+    why = ("outside the evidence base"
+           if m.get("evidence_status") == "out_of_support"
+           else "insufficient evidence")
+    covtxt = (f" — evidence coverage {cov * 100:.0f}% of this group's households"
+              if cov is not None else "")
+    st.markdown(
+        f"**{m['group']}** — <b>insufficient evidence</b> "
+        f"<span style='color:#6B6355'>({why}{covtxt})</span>{low}",
+        unsafe_allow_html=True,
+    )
+
+
+def _uninterval_note(members: list) -> None:
+    """Fields the scenario still gives as bare numbers.
+
+    The contract now ships disposable_income_delta_p05/_p95 for metro
+    subgroups, so those render as real intervals. National by_group entries
+    still carry a bare delta, and those are quarantined here and labelled
+    rather than shown as if their precision were known.
     """
-    fields = ("households_weighted", "disposable_income_delta", "pct_better_off")
-    present = [m for m in members if any(f in m for f in fields)]
-    if not present:
+    bare = [
+        m for m in members
+        if m.get("disposable_income_delta") is not None
+        and m.get("disposable_income_delta_p05") is None
+    ]
+    if not bare:
         return
 
     lines = []
-    for m in present:
+    for m in bare:
         bits = []
-        if "households_weighted" in m:
+        if m.get("households_weighted") is not None:
             bits.append(f"{m['households_weighted']:,.0f} households")
-        if "disposable_income_delta" in m:
-            bits.append(f"{charts.format_delta(m['disposable_income_delta'], charts.CURRENCY)} income")
-        if "pct_better_off" in m:
+        bits.append(charts.format_delta(m["disposable_income_delta"], charts.CURRENCY) + " income")
+        if m.get("pct_better_off") is not None:
             bits.append(f"{m['pct_better_off'] * 100:.0f}% better off")
         lines.append(f"<li><b>{m['group']}</b> — {' · '.join(bits)}</li>")
 
     st.markdown(
         "<div class='ps-caveat'><b>Point estimates — no interval published for these.</b> "
-        "The scenario contract carries p05/p95 for outcomes and support only. "
-        "Read the figures below as central values with unstated uncertainty."
+        "Metro subgroups carry p05/p95 on the income change; these national ones do not. "
         f"<ul style='margin:.4rem 0 0 0'>{''.join(lines)}</ul></div>",
         unsafe_allow_html=True,
     )

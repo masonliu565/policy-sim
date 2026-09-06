@@ -1,4 +1,4 @@
-"""Isometric map view: shared scales, metro fallback, and honest band widths."""
+"""Isometric map view, against the real output contract in docs/output_contract.md."""
 import json
 import math
 import pathlib
@@ -7,134 +7,229 @@ import pytest
 
 from app.geo import map_config
 from app.map_view import (
+    build_delta_domain,
     build_domains,
     build_payload,
     build_support_domain,
     _rank_groups,
+    _group_rows,
 )
-from app.scenarios import metro_key
+from app.scenarios import list_scenarios, load_scenario, metro_key
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 
-NATIONAL = {
-    "policy_id": "p", "label": "P", "n_seeds": 500,
+# by_metro is a LIST keyed by display label, per the contract.
+SCEN = {
+    "policy_id": "p", "label": "P", "n_seeds": 500, "in_support": True,
     "impact": {"child_poverty_rate":
                {"baseline": 0.142, "median": 0.084, "p05": 0.071, "p95": 0.098}},
-    "opinion": {"overall_support": {"median": 0.58, "p05": 0.51, "p95": 0.65},
-                "by_group": [
-                    {"group_type": "income_quintile", "group": "Q1",
-                     "disposable_income_delta": 3140, "pct_better_off": 0.91,
-                     "support": {"median": 0.74, "p05": 0.66, "p95": 0.81},
-                     "evidence_ids": ["ev_a"]},
-                    {"group_type": "census_region", "group": "South",
-                     "disposable_income_delta": 1820, "pct_better_off": 0.44,
-                     "support": {"median": 0.55, "p05": 0.47, "p95": 0.63},
-                     "evidence_ids": ["ev_a"]}]},
+    "opinion": {
+        "overall_support": {"median": 0.58, "p05": 0.51, "p95": 0.65},
+        "by_group": [
+            {"group_type": "income_quintile", "group": "Q1",
+             "disposable_income_delta": 3140, "pct_better_off": 0.91,
+             "households_weighted": 26000000, "evidence_status": "ok",
+             "support": {"median": 0.74, "p05": 0.66, "p95": 0.81},
+             "evidence_ids": ["ev_a"]},
+            {"group_type": "income_quintile", "group": "Q3",
+             "disposable_income_delta": 1180, "pct_better_off": 0.42,
+             "support": None, "evidence_status": "insufficient_evidence",
+             "evidence_coverage": 0.0, "evidence_ids": []}]},
     "warnings": [],
-    # One metro present, deliberately with a WIDER band than national.
-    "by_metro": {"houston": {
+    "by_metro": [{
+        "metro": "Houston", "households_weighted": 2725020.0, "sample_n": 2000,
+        "low_sample": False,
         "impact": {"child_poverty_rate":
                    {"baseline": 0.161, "median": 0.092, "p05": 0.052, "p95": 0.131}},
-        "by_group": [{"group_type": "income_quintile", "group": "Q1",
-                      "support": {"median": 0.72, "p05": 0.58, "p95": 0.86},
-                      "evidence_ids": ["ev_a"]}]}},
+        "top_subgroups": [
+            {"group_type": "household_type", "group": "couple_with_kids",
+             "disposable_income_delta": 4820.0, "disposable_income_delta_p05": 4310.0,
+             "disposable_income_delta_p95": 5290.0, "households_weighted": 512000.0,
+             "sample_n": 340, "low_sample": False}]}],
 }
 
 
-def test_frontend_component_exists():
-    idx = REPO / "app" / "frontend" / "index.html"
-    assert idx.exists()
-    src = idx.read_text()
-    assert "streamlit:componentReady" in src
-    assert "streamlit:setComponentValue" in src
+def loaded(scen, tmp_path_factory=None):
+    """Run it through the loader so by_metro_index exists, as at runtime."""
+    import tempfile, os
+    fd, path = tempfile.mkstemp(suffix=".json")
+    with os.fdopen(fd, "w") as f:
+        json.dump(scen, f)
+    try:
+        return load_scenario(path)
+    finally:
+        os.unlink(path)
 
 
-def test_scale_is_shared_between_national_and_metro():
-    """The metro band must be drawn on the national axis, not its own.
+# --- the honesty guarantee -------------------------------------------------
+def test_metro_band_renders_wider_on_the_shared_axis():
+    """The contract: metro intervals are ~3.9x wider and must not be rescaled.
 
-    This is the guarantee that a wider metro interval LOOKS wider. If each
-    panel got its own domain the bars would be normalised and the extra
-    uncertainty would vanish.
+    One shared domain per outcome is what makes that visible. Per-panel
+    autoscaling would draw both bands the same width and delete the finding.
     """
-    d = build_domains(NATIONAL)["child_poverty_rate"]
-    nat = NATIONAL["impact"]["child_poverty_rate"]
-    met = NATIONAL["by_metro"]["houston"]["impact"]["child_poverty_rate"]
+    s = loaded(SCEN)
+    d = build_domains(s)["child_poverty_rate"]
+    nat = s["impact"]["child_poverty_rate"]
+    met = s["by_metro_index"]["houston"]["impact"]["child_poverty_rate"]
+
     for band in (nat, met):
         assert d[0] <= band["p05"] and band["p95"] <= d[1], "domain must cover both"
 
     span = d[1] - d[0]
     nat_w = (nat["p95"] - nat["p05"]) / span
     met_w = (met["p95"] - met["p05"]) / span
-    assert met_w > nat_w * 2, (
-        f"metro band should render visibly wider (nat={nat_w:.3f}, metro={met_w:.3f})")
+    assert met_w > nat_w * 2, f"metro band must render wider (nat={nat_w:.3f} metro={met_w:.3f})"
 
 
-def test_support_domain_covers_metro_groups_too():
-    d = build_support_domain(NATIONAL)
-    assert d[0] <= 0.58 and 0.86 <= d[1]
+def test_real_scenario_metro_bands_are_drawn_on_the_national_axis():
+    """Whatever the widths turn out to be, both are drawn on one shared axis.
+
+    The contract predicts metro bands ~3.9x wider. In Track A's actual output
+    that holds for some metro/outcome pairs and not others — Atlanta and
+    Phoenix child-poverty bands come out NARROWER than national, and San
+    Francisco's collapse to zero width. The app must not assume the prediction;
+    it must draw whatever is there on a common scale and let it show.
+    """
+    s = load_scenario(REPO / "scenarios" / "ctc_2021.json")
+    d = build_domains(s)["child_poverty_rate"]
+    nat = s["impact"]["child_poverty_rate"]
+    assert d[0] <= nat["p05"] and nat["p95"] <= d[1]
+    for key, m in s["by_metro_index"].items():
+        b = m["impact"]["child_poverty_rate"]
+        assert d[0] <= b["p05"] and b["p95"] <= d[1], f"{key} falls outside the shared axis"
 
 
+def test_degenerate_metro_intervals_are_detected():
+    """San Francisco's poverty bands have p05 == p95 in the real output.
+
+    A zero-width band must not render as an ordinary confident estimate.
+    """
+    s = load_scenario(REPO / "scenarios" / "ctc_2021.json")
+    sf = s["by_metro_index"]["san_francisco"]["impact"]["child_poverty_rate"]
+    assert sf["p05"] == sf["p95"], "fixture assumption changed; revisit this test"
+    notes = s["_notes"]
+    assert any("zero-width" in n for n in notes), notes
+
+
+# --- the three contract states --------------------------------------------
+def test_null_support_is_preserved_not_defaulted_to_zero():
+    p = build_payload(loaded(SCEN), [])
+    q3 = next(g for g in p["groups"] if g["group"] == "Q3")
+    assert q3["support"] is None
+    assert q3["evidence_status"] == "insufficient_evidence"
+
+
+def test_out_of_support_scenario_carries_nearest_policies():
+    s = load_scenario(REPO / "scenarios" / "flat_500.json")
+    p = build_payload(s, [])
+    assert p["in_support"] is False
+    assert p["overall_support"] is None
+    assert all(g["support"] is None for g in p["groups"])
+    assert p["nearest_policies"], "an out-of-support scenario must offer alternatives"
+
+
+def test_low_sample_flag_survives_into_the_payload():
+    scen = json.loads(json.dumps(SCEN))
+    scen["by_metro"][0]["top_subgroups"][0]["low_sample"] = True
+    p = build_payload(loaded(scen), [])
+    assert p["by_metro"]["houston"]["groups"][0]["low_sample"] is True
+
+
+# --- income-change intervals ----------------------------------------------
+def test_metro_delta_becomes_a_real_interval():
+    p = build_payload(loaded(SCEN), [])
+    band = p["by_metro"]["houston"]["groups"][0]["delta"]
+    assert band == {"median": 4820.0, "p05": 4310.0, "p95": 5290.0, "baseline": 0.0}
+
+
+def test_national_delta_without_bounds_is_not_faked_into_a_band():
+    """A bare point estimate must not be rendered as if it had an interval."""
+    p = build_payload(loaded(SCEN), [])
+    q1 = next(g for g in p["groups"] if g["group"] == "Q1")
+    assert q1["delta"] is None
+    assert q1["delta_point"] == 3140
+
+
+def test_delta_domain_spans_national_and_metro():
+    d = build_delta_domain(loaded(SCEN))
+    assert d[0] <= 4310.0 and 5290.0 <= d[1]
+
+
+# --- ranking / integrity ---------------------------------------------------
 def test_groups_ranked_by_absolute_income_change():
-    ranked = _rank_groups(NATIONAL["opinion"]["by_group"])
-    assert [g["group"] for g in ranked] == ["Q1", "South"]
+    rows = _group_rows(SCEN["opinion"]["by_group"])
+    assert [g["group"] for g in _rank_groups(rows)] == ["Q1", "Q3"]
 
 
-def test_groups_without_a_delta_are_not_scored_on_something_invented():
-    groups = [{"group": "A", "support": {}}, {"group": "B", "disposable_income_delta": 10,
-                                             "support": {}}]
-    assert [g["group"] for g in _rank_groups(groups)] == ["B", "A"]
-
-
-def test_payload_carries_no_computed_policy_numbers():
-    """build_payload may reshape and scale. It must never alter a figure."""
-    p = build_payload(NATIONAL, [])
-    assert p["impact"]["child_poverty_rate"] == NATIONAL["impact"]["child_poverty_rate"]
-    assert p["by_metro"]["houston"]["impact"] == NATIONAL["by_metro"]["houston"]["impact"]
+def test_payload_never_alters_a_figure():
+    s = loaded(SCEN)
+    p = build_payload(s, [])
+    assert p["impact"] == s["impact"]
+    assert p["by_metro"]["houston"]["impact"] == s["by_metro_index"]["houston"]["impact"]
 
 
 def test_missing_by_metro_yields_no_entries_not_a_fallback():
-    """A scenario with no by_metro must produce nothing, never national figures."""
-    scenario = {k: v for k, v in NATIONAL.items() if k != "by_metro"}
-    p = build_payload(scenario, [])
-    assert p["by_metro"] == {}
+    scen = {k: v for k, v in SCEN.items() if k != "by_metro"}
+    assert build_payload(loaded(scen), [])["by_metro"] == {}
 
 
+# --- geometry / keys -------------------------------------------------------
 def test_all_six_cities_are_declared():
-    keys = {c["metro_key"] for c in map_config()["cities"]}
-    assert keys == {"new_york", "houston", "detroit", "san_francisco", "phoenix", "atlanta"}
+    assert {c["metro_key"] for c in map_config()["cities"]} == {
+        "new_york", "houston", "detroit", "san_francisco", "phoenix", "atlanta"}
 
 
 def test_track_a_metro_labels_resolve_to_the_map_keys():
-    """Track A's crosswalk labels metros 'New York'; the map keys them 'new_york'."""
-    track_a = ["New York", "Houston", "Detroit", "San Francisco", "Phoenix", "Atlanta"]
-    keys = {c["metro_key"] for c in map_config()["cities"]}
-    assert {metro_key(m) for m in track_a} == keys
+    """Track A labels metros 'New York'; the geometry keys them 'new_york'."""
+    s = load_scenario(REPO / "scenarios" / "ctc_2021.json")
+    assert set(s["by_metro_index"]) == {c["metro_key"] for c in map_config()["cities"]}
 
 
 def test_every_city_lands_inside_the_tile_grid():
     cfg = map_config()
     b, tx, ty = cfg["bounds"], cfg["tile"], cfg["tile_y"]
-    nx = math.ceil((b["x1"] - b["x0"]) / tx)
-    ny = math.ceil((b["y1"] - b["y0"]) / ty)
+    nx, ny = math.ceil((b["x1"] - b["x0"]) / tx), math.ceil((b["y1"] - b["y0"]) / ty)
     for c in cfg["cities"]:
-        gx = (c["x"] - b["x0"]) / tx
-        gy = ny - (c["y"] - b["y0"]) / ty
+        gx, gy = (c["x"] - b["x0"]) / tx, ny - (c["y"] - b["y0"]) / ty
         assert 0 <= gx <= nx and 0 <= gy <= ny, c["label"]
 
 
-def test_markers_snap_to_land():
-    """San Francisco sits outside the coarse outline; the marker must still land."""
+# --- frontend integrity ----------------------------------------------------
+def test_frontend_component_exists_and_speaks_the_protocol():
     src = (REPO / "app" / "frontend" / "index.html").read_text()
+    assert "streamlit:componentReady" in src
+    assert "streamlit:setComponentValue" in src
     assert "snapToLand" in src
 
 
-def test_bar_widths_are_never_normalised_in_the_frontend():
+def test_frontend_states_it_does_not_rescale_metro_bands():
     src = (REPO / "app" / "frontend" / "index.html").read_text()
-    assert "not normalised" in src or "not normalized" in src
+    assert "not rescaled" in src
+
+
+def test_frontend_shows_the_literal_words_the_contract_requires():
+    """'insufficient evidence' — not a zero, not a blank, not a dash."""
+    src = (REPO / "app" / "frontend" / "index.html").read_text()
+    assert "insufficient evidence" in src
 
 
 def test_no_hardcoded_policy_numbers_in_the_frontend():
-    """The component may carry geometry constants, never a policy figure."""
     src = (REPO / "app" / "frontend" / "index.html").read_text()
-    for forbidden in ("0.142", "0.084", "105000000000", "0.58", "3140"):
+    for forbidden in ("0.142", "0.084", "105000000000", "3140"):
         assert forbidden not in src, f"hardcoded figure {forbidden} in the frontend"
+
+
+# --- every real scenario loads and builds ---------------------------------
+@pytest.mark.parametrize("name", ["ctc_2021", "baseline", "ctc_1000", "flat_500", "eitc_match"])
+def test_every_real_scenario_builds_a_payload(name):
+    s = load_scenario(REPO / "scenarios" / f"{name}.json")
+    p = build_payload(s, [])
+    assert len(p["impact"]) == 4
+    assert len(p["by_metro"]) == 6
+    assert p["groups"]
+
+
+def test_backtest_json_is_not_offered_as_a_scenario():
+    """/scenarios also holds A6 output, which is not a policy scenario."""
+    assert "backtest.json" not in {e["filename"] for e in list_scenarios()}

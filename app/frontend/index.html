@@ -47,6 +47,9 @@
            background: var(--track); border-radius: 3px; }
   .band  { position: absolute; top: 3px; height: 11px; background: var(--band);
            border-radius: 2px; opacity: .9; }
+  .degen { position: absolute; top: 0; width: 8px; height: 17px;
+           background: var(--warnbg); border: 2px solid var(--baseline);
+           border-radius: 2px; }
   .med   { position: absolute; top: 0; width: 3px; height: 17px; background: var(--medink); }
   .base  { position: absolute; top: -2px; width: 0; height: 21px;
            border-left: 2px dashed var(--baseline); }
@@ -69,6 +72,15 @@
           border-radius: 4px; margin-top: 7px; }
   .stack { font-size: 11.5px; color: var(--soft); }
   .stack b { color: var(--ink); }
+  .badge { display: inline-block; font-size: 10px; font-weight: 650;
+           padding: 1px 6px; border-radius: 999px; margin-left: 6px;
+           background: var(--warnbg); border: 1px solid var(--warnedge); }
+  .nosupport { font-size: 12.5px; font-weight: 650; color: var(--ink);
+               background: var(--warnbg); border-left: 4px solid var(--warnedge);
+               padding: 5px 9px; border-radius: 4px; margin-top: 4px; }
+  .near { font-size: 12px; padding: 7px 0; border-top: 1px solid var(--edge); }
+  .near b { font-size: 13px; }
+  .near .src { color: var(--soft); font-size: 11px; }
 </style>
 
 <div id="wrap">
@@ -88,6 +100,12 @@
       </div>
       <div class="sub" id="scopesub"></div>
       <div id="stack" class="stack"></div>
+    </div>
+
+    <div class="panel" id="oos" style="display:none">
+      <h2 id="ooshead">Outside the evidence base</h2>
+      <div class="sub" id="oossub"></div>
+      <div id="oosbody"></div>
     </div>
 
     <div class="panel" id="summary">
@@ -310,14 +328,22 @@ function fmt(v, unit) {
 function bar(band, domain, unit) {
   const span = domain[1] - domain[0] || 1;
   const pct = (v) => ((v - domain[0]) / span) * 100;
+  // A collapsed interval (p05 === p95) claims perfect certainty. Drawing it as
+  // a normal short bar would read as a tight estimate, so it gets its own mark.
+  const degenerate = band.p05 === band.p95;
   const parts = [
     `<div class="track">`,
-    `<div class="band" style="left:${pct(band.p05)}%;width:${Math.max(0.8, pct(band.p95) - pct(band.p05))}%"></div>`,
+    degenerate
+      ? `<div class="degen" style="left:calc(${pct(band.p05)}% - 4px)"></div>`
+      : `<div class="band" style="left:${pct(band.p05)}%;width:${Math.max(0.8, pct(band.p95) - pct(band.p05))}%"></div>`,
     `<div class="med" style="left:calc(${pct(band.median)}% - 1.5px)"></div>`,
   ];
   if (band.baseline !== null && band.baseline !== undefined)
     parts.push(`<div class="base" style="left:${pct(band.baseline)}%"></div>`);
-  parts.push(`</div><div class="scale"><span>${fmt(domain[0], unit)}</span><span>${fmt(domain[1], unit)}</span></div>`);
+  parts.push(`</div>`);
+  if (degenerate)
+    parts.push(`<div class="delta" style="color:var(--baseline)">zero-width interval — p05 = p95, shown as a point</div>`);
+  parts.push(`<div class="scale"><span>${fmt(domain[0], unit)}</span><span>${fmt(domain[1], unit)}</span></div>`);
   return parts.join("");
 }
 
@@ -341,6 +367,68 @@ function metricBlock(key, band, domain, unit, label) {
     </div>`;
 }
 
+function groupBlock(g, isMetro) {
+  const low = g.low_sample
+    ? `<span class="badge">low sample${g.sample_n ? " · n=" + g.sample_n : ""}</span>` : "";
+
+  // Support: a real interval, or the literal words the contract asks for.
+  let support = "";
+  if (g.support) {
+    support = `<div class="val">${fmt(g.support.median, "percent")} `
+      + `[${fmt(g.support.p05, "percent")} – ${fmt(g.support.p95, "percent")}] support</div>`
+      + bar(g.support, DATA.support_domain, "percent");
+  } else if (!isMetro) {
+    const why = g.evidence_status === "out_of_support"
+      ? "out of support — no historical policy close enough in lever-space"
+      : "insufficient evidence";
+    const cov = (g.evidence_coverage !== null && g.evidence_coverage !== undefined)
+      ? ` <span class="src">evidence coverage ${(g.evidence_coverage * 100).toFixed(0)}%</span>` : "";
+    support = `<div class="nosupport">insufficient evidence</div>`
+      + `<div class="delta">${why}${cov}</div>`;
+  }
+
+  // Income change: an interval where the scenario gives one, and explicitly
+  // labelled as a point estimate where it does not.
+  let delta = "";
+  if (g.delta) {
+    delta = `<div class="delta">${fmt(g.delta.median, "currency")} `
+      + `[${fmt(g.delta.p05, "currency")} – ${fmt(g.delta.p95, "currency")}] income change</div>`
+      + bar(g.delta, DATA.delta_domain, "currency");
+  } else if (g.delta_point !== null && g.delta_point !== undefined) {
+    delta = `<div class="warn">${fmt(g.delta_point, "currency")} income change`
+      + (g.pct_better_off !== null && g.pct_better_off !== undefined
+          ? `, ${(g.pct_better_off * 100).toFixed(0)}% better off` : "")
+      + ` — point estimates, no interval published for these.</div>`;
+  }
+
+  const ev = (g.evidence_ids && g.evidence_ids.length)
+    ? `<div class="delta">evidence: ${g.evidence_ids.join(", ")}</div>` : "";
+
+  return `<div class="metric">
+      <div class="name">${g.group_type.replace(/_/g, " ")}</div>
+      <div class="val" style="font-size:14px">${g.group}${low}</div>
+      ${support}${ev}${delta}
+    </div>`;
+}
+
+function renderOutOfSupport() {
+  const box = document.getElementById("oos");
+  if (DATA.in_support !== false) { box.style.display = "none"; return; }
+  box.style.display = "block";
+  document.getElementById("oossub").textContent =
+    "No historical policy is close enough in lever-space to say anything about "
+    + "opinion, so every support figure is withheld. The material impact below "
+    + "is unaffected — the microsimulation does not need opinion evidence.";
+  document.getElementById("oosbody").innerHTML =
+    (DATA.nearest_policies || []).map((n) => `
+      <div class="near">
+        <b>${n.label || n.policy_id}</b>${n.year ? " · " + n.year : ""}
+        ${n.distance !== undefined ? `<span class="src"> · lever-space distance ${n.distance.toFixed(1)} (cutoff 1.5)</span>` : ""}
+        <div class="src">${n.source || ""}</div>
+      </div>`).join("")
+    || `<div class="warn">No nearest policies were supplied.</div>`;
+}
+
 function renderSide() {
   const metroKey = selected;
   const metro = metroKey && DATA.by_metro ? DATA.by_metro[metroKey] : null;
@@ -348,20 +436,22 @@ function renderSide() {
 
   document.getElementById("scope").textContent = metroKey ? cityLabel : "United States";
   document.getElementById("scopesub").textContent = metroKey
-    ? "Metro estimates. Bands are wider than national because a metro subsample carries more sampling error — the bars are on the same scale, not normalised."
+    ? `Metro estimates${metro && metro.sample_n ? ", " + metro.sample_n.toLocaleString() + " sampled households" : ""}. `
+      + "Bands are wider than national because a metro subsample carries more sampling "
+      + "error — roughly 3.9x. They are drawn on the national axis, not rescaled to match it."
     : DATA.label + " · " + (DATA.n_seeds ? DATA.n_seeds + " seeds" : "seeds not stated");
 
   const stack = DATA.stack || [];
   document.getElementById("stack").innerHTML = stack.length
     ? "Applied: " + stack.map((s) => "<b>" + s + "</b>").join(" + ")
-    : "<b>Baseline</b> — no policy applied.";
+    : "<b>Baseline</b> — no policy stacked.";
 
-  // Metrics
+  renderOutOfSupport();
+
   const box = document.getElementById("metrics");
   const sub = document.getElementById("summarysub");
 
   if (metroKey && !metro) {
-    box.innerHTML = "";
     sub.innerHTML = "";
     box.innerHTML = `<div class="warn"><b>No metro estimate available for ${cityLabel}.</b>
       This scenario has no <code>by_metro</code> entry for it, so there is nothing to show.
@@ -373,7 +463,7 @@ function renderSide() {
 
   const impact = metro ? (metro.impact || {}) : DATA.impact;
   sub.textContent = metroKey
-    ? "Read from by_metro." + metroKey
+    ? "Computed on the metro subpopulation, not derived from the national figures."
     : "Read from the scenario file. No live model call.";
 
   box.innerHTML = Object.keys(impact).map((k) =>
@@ -381,30 +471,31 @@ function renderSide() {
                 DATA.labels[k] || k.replace(/_/g, " "))).join("") ||
     `<div class="warn">This scenario carries no impact outcomes.</div>`;
 
-  // Support / groups
+  // Overall support, national view only.
+  if (!metroKey) {
+    if (DATA.overall_support) {
+      box.innerHTML += metricBlock("overall_support", DATA.overall_support,
+        DATA.support_domain, "percent", "Overall support");
+    } else {
+      box.innerHTML += `<div class="metric"><div class="name">Overall support</div>
+        <div class="nosupport">insufficient evidence</div>
+        <div class="delta">${DATA.in_support === false
+          ? "the policy lies outside the evidence base" : "no national estimate is supported"}</div></div>`;
+    }
+  }
+
   const gbox = document.getElementById("groups");
   const gsub = document.getElementById("groupsub");
-  const groups = metro ? (metro.by_group || []) : (DATA.by_group || []);
+  const groups = metro ? (metro.groups || []) : (DATA.groups || []);
 
   if (!groups.length) {
     gsub.textContent = "";
     gbox.innerHTML = `<div class="warn">No subgroup figures in this scenario${metroKey ? " for this metro" : ""}.</div>`;
   } else {
-    gsub.textContent = "Ranked by absolute change in disposable income where the scenario provides it.";
-    gbox.innerHTML = groups.map((g) => {
-      const ev = (g.evidence_ids || []).length
-        ? `<div class="delta">evidence: ${g.evidence_ids.join(", ")}</div>` : "";
-      const noBand = (g.disposable_income_delta !== undefined && g.disposable_income_delta !== null)
-        ? `<div class="warn">${fmt(g.disposable_income_delta, "currency")} income change, ${(g.pct_better_off * 100).toFixed(0)}% better off — point estimates, no interval published.</div>`
-        : "";
-      return `<div class="metric">
-          <div class="name">${g.group_type.replace(/_/g, " ")}</div>
-          <div class="val">${g.group} — ${fmt(g.support.median, "percent")} [${fmt(g.support.p05, "percent")} – ${fmt(g.support.p95, "percent")}]</div>
-          ${ev}
-          ${bar(g.support, DATA.support_domain, "percent")}
-          ${noBand}
-        </div>`;
-    }).join("");
+    gsub.textContent = metroKey
+      ? "The three most-affected subgroups in this metro, by weighted income change."
+      : "Ranked by absolute change in disposable income.";
+    gbox.innerHTML = groups.map((g) => groupBlock(g, !!metroKey)).join("");
   }
 }
 
