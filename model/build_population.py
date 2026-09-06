@@ -25,6 +25,22 @@ THREE DEVIATIONS FROM THE ORIGINAL SPEC, EACH DELIBERATE
    INSIDE the 3% tolerance at the A3 gate. It would pass validation while being
    wrong, and every downstream poverty and cost figure would inherit it.
 
+PERSON WEIGHTS -- why NP * WGTP is not used for population
+-----------------------------------------------------------------------------
+PUMS controls household weights (WGTP) to published household totals and
+person weights (PWGTP) to published population totals, as two separate
+raking operations. They are not consistent with each other by construction.
+Measured on the full 2024 file, over the same filtered household universe:
+
+    sum(WGTP)         = 132,737,145   published B11001 = 132,737,146  (exact)
+    sum(WGTP * NP)    = 325,953,443   published B11002 = 331,722,429  (-1.74%)
+    sum(PWGTP)        = 331,722,429   published B11002 = 331,722,429  (exact)
+
+So every person-level total is built from PWGTP, carried through the sample as
+person_weight / child_weight / adult_weight. Using WGTP * NP understates
+population by 1.7% nationally and by up to 5% in individual metros, which was
+enough to fail the Houston metro check at A3.
+
 -----------------------------------------------------------------------------
 SAMPLE DESIGN -- stratified PPS, because of the metro oversample
 -----------------------------------------------------------------------------
@@ -125,6 +141,13 @@ def aggregate_persons():
                 "wage_income_raw": chunk["WAGP"].fillna(0.0),
                 "n_employed_adults": (is_adult & chunk["ESR"].isin(EMPLOYED_ESR)).astype("int32"),
                 "hours_worked": chunk["WKHP"].fillna(0.0),
+                # Person weights, carried separately. PUMS controls WGTP to
+                # household totals and PWGTP to population totals, so
+                # WGTP * NP does NOT reproduce published population. See the
+                # PERSON WEIGHTS note in the module docstring.
+                "pwgtp_sum": chunk["PWGTP"].fillna(0.0),
+                "pwgtp_child_sum": chunk["PWGTP"].fillna(0.0).where(age < 18, 0.0),
+                "pwgtp_adult_sum": chunk["PWGTP"].fillna(0.0).where(is_adult, 0.0),
             })
             # Partial sums per chunk. A SERIALNO split across a chunk boundary
             # is fine: these are all sums, and sums are associative, so the
@@ -312,6 +335,15 @@ def main():
     sample = hh.loc[np.concatenate(picks)].copy()
     sample["design_weight"] = np.concatenate(weights)
 
+    # Person-level design weights. design_weight = WGTP / pi, so
+    # design_weight * (pwgtp_sum / WGTP) = pwgtp_sum / pi, which is the
+    # Horvitz-Thompson estimator of the total person weight -- and PWGTP is
+    # what PUMS controls to published population totals.
+    ratio = sample["design_weight"] / sample["WGTP"]
+    sample["person_weight"] = ratio * sample["pwgtp_sum"]
+    sample["child_weight"] = ratio * sample["pwgtp_child_sum"]
+    sample["adult_weight"] = ratio * sample["pwgtp_adult_sum"]
+
     info = pd.DataFrame(strat_info)
     print()
     print(f"  {'stratum':<14} {'pop hh':>10} {'sampled':>8} {'cert':>5} "
@@ -347,16 +379,24 @@ def main():
           f"  ({100 * (samp_w - pop_w) / pop_w:+.4f}%)")
     print(f"  sum of WGTP within the sample (raw) : {sample['WGTP'].sum():>16,.0f}"
           f"   <- NOT a national total; do not use")
+    print()
+    print("  population in households, two estimators:")
+    print(f"    sum(design_weight * NP)           : "
+          f"{(sample['design_weight'] * sample['NP']).sum():>16,.0f}   <- WRONG, biased low")
+    print(f"    sum(person_weight)                : "
+          f"{sample['person_weight'].sum():>16,.0f}   <- correct, PWGTP-controlled")
+    print(f"    children under 18 (child_weight)  : "
+          f"{sample['child_weight'].sum():>16,.0f}")
 
     hr("PER-METRO SAMPLE (for sanity-checking against published metro figures)")
     print(f"  {'metro':<14} {'households':>10} {'weighted hh':>14} {'weighted persons':>18}")
     for m in metros:
         g = sample[sample["metro"] == m]
         print(f"  {m:<14} {len(g):>10,} {g['design_weight'].sum():>14,.0f} "
-              f"{(g['design_weight'] * g['NP']).sum():>18,.0f}")
+              f"{g['person_weight'].sum():>18,.0f}")
     g = sample[sample["metro"].isna()]
     print(f"  {'(rest of US)':<14} {len(g):>10,} {g['design_weight'].sum():>14,.0f} "
-          f"{(g['design_weight'] * g['NP']).sum():>18,.0f}")
+          f"{g['person_weight'].sum():>18,.0f}")
 
     # ----------------------------------------------------------------- write
     keep = ["SERIALNO", "STATE", "PUMA", "REGION", "region_name", "metro",
@@ -364,7 +404,9 @@ def main():
             "HINCP", "ADJINC", "hincp_adj", "wage_income",
             "n_child_under_6", "n_child_6_to_17", "n_children", "n_adults",
             "n_employed_adults", "hours_worked", "household_type",
-            "income_quintile"]
+            "income_quintile",
+            "person_weight", "child_weight", "adult_weight",
+            "pwgtp_sum", "pwgtp_child_sum", "pwgtp_adult_sum"]
     out = sample[keep].reset_index(drop=True)
     PROCESSED.mkdir(parents=True, exist_ok=True)
     out.to_parquet(OUT, index=False)
