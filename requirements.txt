@@ -1,0 +1,20 @@
+# policy-sim runtime dependencies.
+# Install:  uv venv --python 3.12 .venv && uv pip install -r requirements.txt
+# Exact resolved versions for a reproducible rebuild are in requirements.lock.txt
+
+# --- microsimulation core (model/) ---
+numpy>=2.1              # vectorized engine; seeds are an array dimension (A4)
+pandas>=2.2             # chunked PUMS loading + weighted aggregation (A2)
+pyarrow>=17             # parquet writer for data/processed/us_households.parquet
+scipy>=1.14             # scipy.stats.qmc Latin hypercube draws (A4)
+matplotlib>=3.9         # docs/convergence.png, backtest charts (A4, A6)
+
+# --- data acquisition (A1) ---
+requests>=2.32          # PUMS directory listing / download helpers
+
+# --- demo app (app/, Track B) ---
+streamlit>=1.50         # reads scenarios/*.json only, never the live model path
+
+# --- misc ---
+python-dotenv>=1.0      # loads .env
+anthropic>=0.69         # ANTHROPIC_API_KEY in .env

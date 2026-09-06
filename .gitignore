@@ -27,3 +27,5 @@ Thumbs.db
 # model (metro crosswalk, poverty thresholds). The bulk PUMS csv lives in
 # /data/raw, which is already excluded wholesale above.
 !/data/processed/*.csv
+
+.env
