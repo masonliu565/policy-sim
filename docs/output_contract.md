@@ -96,6 +96,13 @@ sitting in cells backed by real survey data. A group at 0.12 coverage is not
 "12% supportive"; it means 88% of the group has no evidence behind it. Useful as
 a tooltip, dangerous as a headline.
 
+Under MRP this is 1.0 when the model contains a dimension informed by evidence
+and 0.0 when it does not. `household_type` groups currently sit at 0.0 — no
+source publishes a parents-vs-non-parents crosstab with a subgroup sample size,
+so that dimension is excluded from the model rather than imputed, and those
+groups report `insufficient_evidence`. Their material impact numbers are still
+fully valid; render them normally.
+
 Values of `evidence_status`:
 
 | value | meaning |
@@ -103,6 +110,13 @@ Values of `evidence_status`:
 | `"ok"` | `support` is a real `{median,p05,p95}` |
 | `"insufficient_evidence"` | `support` is `null`; show the text |
 | `"out_of_support"` | `support` is `null` because the whole policy is out of support — see state 3 |
+
+Each `by_group` entry also carries `"method"` — currently `"mrp"`, the
+hierarchical model in `model/mrp.py`. The older `"ladder"` path still exists and
+is used by the backtest for comparison, but is not what the demo reads. You do
+not need to branch on it; it is there so a number on screen can be traced to the
+method that produced it.
+
 
 ## State 3 — `in_support: false`
 
