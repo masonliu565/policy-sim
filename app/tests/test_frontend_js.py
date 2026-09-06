@@ -19,13 +19,13 @@ PURE = ["iso", "pointInPoly", "relief", "snapToLand", "fmt"]
 
 
 def _js() -> str:
-    return re.search(r"<script>(.*)</script>", INDEX.read_text(), re.S).group(1)
+    return re.search(r"<script>(.*)</script>", INDEX.read_text(encoding="utf-8"), re.S).group(1)
 
 
 @node
 def test_component_js_parses(tmp_path):
     f = tmp_path / "component.js"
-    f.write_text(_js())
+    f.write_text(_js(), encoding="utf-8")
     subprocess.run(["node", "--check", str(f)], check=True, capture_output=True)
 
 
@@ -38,15 +38,19 @@ def _pure_module(tmp_path) -> pathlib.Path:
         out.append(m.group(0))
     out.append("module.exports={" + ",".join(PURE) + "};")
     f = tmp_path / "pure.js"
-    f.write_text("\n".join(out))
+    f.write_text("\n".join(out), encoding="utf-8")
     return f
 
 
 def _run(tmp_path, expr):
     mod = _pure_module(tmp_path)
     r = subprocess.run(
-        ["node", "-e", f'const m=require({json.dumps(str(mod))});console.log(JSON.stringify({expr}))'],
-        capture_output=True, text=True, check=True)
+        ["node", "-e",
+         f'const m=require({json.dumps(str(mod))});'
+         f'console.log(JSON.stringify({expr}))'],
+        # Decode node's output as UTF-8 rather than the Windows ANSI
+        # codepage, which is what `text=True` alone would use.
+        capture_output=True, text=True, check=True, encoding="utf-8")
     return json.loads(r.stdout.strip())
 
 

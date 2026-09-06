@@ -14,7 +14,7 @@ from app.map_view import (
     _rank_groups,
     _group_rows,
 )
-from app.scenarios import list_scenarios, load_scenario, metro_key
+from app.scenarios import list_scenarios, load_scenario, metro_key, validate
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 
@@ -101,15 +101,30 @@ def test_real_scenario_metro_bands_are_drawn_on_the_national_axis():
 
 
 def test_degenerate_metro_intervals_are_detected():
-    """San Francisco's poverty bands have p05 == p95 in the real output.
+    """A zero-width band must never render as an ordinary confident estimate.
 
-    A zero-width band must not render as an ordinary confident estimate.
+    This used to assert that San Francisco's real bands had p05 == p95, which
+    they did: the model carried parameter uncertainty but no sampling
+    uncertainty, and SF has only 31 sampled households with children in
+    poverty. That was a real bug and it has since been fixed upstream, so
+    pinning the test to the live file made it fail the moment the data got
+    better. The detector is still worth testing, so build the degenerate case
+    explicitly instead of hoping the pipeline keeps producing one.
     """
     s = load_scenario(REPO / "scenarios" / "ctc_2021.json")
     sf = s["by_metro_index"]["san_francisco"]["impact"]["child_poverty_rate"]
-    assert sf["p05"] == sf["p95"], "fixture assumption changed; revisit this test"
-    notes = s["_notes"]
+    sf["p05"] = sf["p95"] = sf["median"]
+    notes = validate(s, "synthetic")
     assert any("zero-width" in n for n in notes), notes
+
+
+def test_real_scenarios_have_no_degenerate_metro_intervals():
+    """The live files should be free of zero-width bands. If one comes back,
+    the model has stopped propagating sampling uncertainty somewhere."""
+    for name in ("ctc_2021", "ctc_1000", "flat_500", "eitc_match"):
+        s = load_scenario(REPO / "scenarios" / f"{name}.json")
+        bad = [n for n in s.get("_notes", []) if "zero-width" in n]
+        assert not bad, f"{name}: {bad}"
 
 
 # --- the three contract states --------------------------------------------
@@ -197,25 +212,25 @@ def test_every_city_lands_inside_the_tile_grid():
 
 # --- frontend integrity ----------------------------------------------------
 def test_frontend_component_exists_and_speaks_the_protocol():
-    src = (REPO / "app" / "frontend" / "index.html").read_text()
+    src = (REPO / "app" / "frontend" / "index.html").read_text(encoding="utf-8")
     assert "streamlit:componentReady" in src
     assert "streamlit:setComponentValue" in src
     assert "snapToLand" in src
 
 
 def test_frontend_states_it_does_not_rescale_metro_bands():
-    src = (REPO / "app" / "frontend" / "index.html").read_text()
+    src = (REPO / "app" / "frontend" / "index.html").read_text(encoding="utf-8")
     assert "not rescaled" in src
 
 
 def test_frontend_shows_the_literal_words_the_contract_requires():
     """'insufficient evidence' — not a zero, not a blank, not a dash."""
-    src = (REPO / "app" / "frontend" / "index.html").read_text()
+    src = (REPO / "app" / "frontend" / "index.html").read_text(encoding="utf-8")
     assert "insufficient evidence" in src
 
 
 def test_no_hardcoded_policy_numbers_in_the_frontend():
-    src = (REPO / "app" / "frontend" / "index.html").read_text()
+    src = (REPO / "app" / "frontend" / "index.html").read_text(encoding="utf-8")
     for forbidden in ("0.142", "0.084", "105000000000", "3140"):
         assert forbidden not in src, f"hardcoded figure {forbidden} in the frontend"
 

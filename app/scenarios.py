@@ -118,7 +118,12 @@ def validate(scenario: Dict[str, Any], where: str = "scenario") -> List[str]:
             # A collapsed interval claims perfect certainty on a 2,000-household
             # subsample, which is not credible. Surface it rather than drawing
             # it as an ordinary confident estimate.
-            if band["p05"] == band["p95"]:
+            # A no-policy scenario costs exactly zero everywhere, with no
+            # spread, and that is the truth rather than a collapsed estimate.
+            # Flagging it made the baseline scenario report six "contract
+            # violations" that were all correct arithmetic.
+            structural_zero = (band["p05"] == band["p95"] == band["median"] == 0)
+            if band["p05"] == band["p95"] and not structural_zero:
                 notes.append(
                     f"by_metro {block['metro']}: {name} has a zero-width interval "
                     f"(p05 == p95 == {band['p05']:.6g}) — shown as a point, not a band"
@@ -134,7 +139,7 @@ def validate(scenario: Dict[str, Any], where: str = "scenario") -> List[str]:
 def load_scenario(path: Path) -> Dict[str, Any]:
     """Load and validate one scenario file."""
     try:
-        scenario = json.loads(Path(path).read_text())
+        scenario = json.loads(Path(path).read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         raise ScenarioError(f"{Path(path).name}: not valid JSON — {exc}") from exc
 
@@ -162,7 +167,7 @@ def list_scenarios(directory: Optional[Path] = None) -> List[Dict[str, str]]:
     for path in sorted(directory.glob("*.json")):
         entry = {"path": str(path), "filename": path.name, "error": ""}
         try:
-            scenario = json.loads(path.read_text())
+            scenario = json.loads(path.read_text(encoding="utf-8"))
             # /scenarios also holds backtest.json, which is A6 output rather
             # than a policy scenario. Identify it by shape, not by filename.
             if "policy_id" not in scenario or "impact" not in scenario:

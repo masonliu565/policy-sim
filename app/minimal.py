@@ -189,11 +189,21 @@ sc = S.load_scenario(Path(options[labels.index(choice)]["path"]))
 # ---------------------------------------------------------------------------
 # map + outcome box
 # ---------------------------------------------------------------------------
-metro_args = [
-    {"metro": m.get("metro"),
-     "value": pct(((m.get("impact") or {}).get("child_poverty_rate") or {}).get("median"))}
-    for m in (sc.get("by_metro") or [])
-]
+def _metro_arg(m: Dict[str, Any]) -> Dict[str, Any]:
+    cpr = ((m.get("impact") or {}).get("child_poverty_rate") or {})
+    base, post = cpr.get("baseline"), cpr.get("median")
+    top = [{"group": t.get("group"), "delta": usd(t.get("disposable_income_delta"))}
+           for t in (m.get("top_subgroups") or [])[:3]]
+    return {"metro": m.get("metro"), "value": pct(post),
+            # The local view's unit chart is 100 children in this metro, split
+            # by what the policy does to them. All three counts come from the
+            # metro's own child poverty rate; none of it is invented.
+            "base": base, "post": post,
+            "households": m.get("households_weighted"),
+            "sample_n": m.get("sample_n"), "top": top}
+
+
+metro_args = [_metro_arg(m) for m in (sc.get("by_metro") or [])]
 picked = _map(metros=metro_args, selected=st.session_state.metro,
               key="usa_map", default=st.session_state.metro)
 if picked != st.session_state.metro:

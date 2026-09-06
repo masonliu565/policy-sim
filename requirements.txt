@@ -8,6 +8,8 @@ pandas>=2.2             # chunked PUMS loading + weighted aggregation (A2)
 pyarrow>=17             # parquet writer for data/processed/us_households.parquet
 scipy>=1.14             # scipy.stats.qmc Latin hypercube draws (A4)
 matplotlib>=3.9         # docs/convergence.png, backtest charts (A4, A6)
+openpyxl>=3.1           # pd.read_excel for the published Census tables:
+                        #   poverty thresholds, CBSA delineations, SPM table B-3
 
 # --- data acquisition (A1) ---
 requests>=2.32          # PUMS directory listing / download helpers
@@ -18,3 +20,6 @@ streamlit>=1.50         # reads scenarios/*.json only, never the live model path
 # --- misc ---
 python-dotenv>=1.0      # loads .env
 anthropic>=0.69         # ANTHROPIC_API_KEY in .env
+pydantic>=2.7           # app/parser.py validates the parsed policy spec.
+                        # Arrives transitively via anthropic, but it is a direct
+                        # import here, so it is pinned directly.

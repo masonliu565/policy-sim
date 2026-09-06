@@ -9,8 +9,13 @@ one carrying the 5th–95th percentile band from a 500-seed run. Nothing is
 rendered as a bare point estimate, and a verification pass checks the generated
 memo against the simulation output number by number.
 
-<!-- SCREENSHOT: replace with a capture of the running app at 1280x720.
-     ![policy-sim](docs/screenshot.png) -->
+![policy-sim](docs/screenshots/birdseye.png)
+
+Click any metro to fly down into it. The local view is a unit chart — one house
+per child in a hundred, split by what the policy does to them, straight from
+that metro's own numbers:
+
+![local view](docs/screenshots/local.png)
 
 ## The architecture rule
 
@@ -52,39 +57,55 @@ does not. Cited `evidence_id`s that do not exist are reported too.
 The panel renders whether or not it finds anything — **"0 unverified numbers"
 is the point**.
 
-## Setup
+## Run it
+
+Two interfaces read the same scenario files. Both are demo-safe: they make zero
+network calls and cannot be broken by wifi, a rate limit or an expired key.
 
 ```bash
-git clone https://github.com/masonliu565/policy-sim.git
-cd policy-sim
+# one-time
+python -m pip install -r requirements.txt
 
-# Python 3.12. The lockfile pins exact versions.
-uv venv --python 3.12 .venv
-uv pip install -r requirements.lock.txt
-# or: python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt
+# the presentation UI -- map, outcome box, policy box, reset, and nothing else
+POLICY_SIM_DEMO_MODE=1 python -m streamlit run app/minimal.py
 
-# Only needed for the parser and the memo. The scenarios need no key.
+# the full UI -- adds the policy memo, the numeric verification panel,
+# per-group breakdowns and the limitations list
+POLICY_SIM_DEMO_MODE=1 python -m streamlit run app/main.py
+```
+
+Then open the URL Streamlit prints (http://localhost:8501 by default).
+
+**`app/minimal.py` is the one to present.** A hand-drawn continental USA, one
+outcome box, the policy text box and reset. Click any of the six metros to swap
+the outcome box to that metro's own numbers, computed on the metro
+subpopulation rather than scaled down from the national figure. Click again, or
+"Back to national", to return.
+
+**`app/main.py` is the one to answer questions from.** Same data, everything
+shown: support by group, the three evidence states, the generated memo and the
+verification panel, and the model's full list of its own limitations.
+
+### With an API key
+
+The scenario files need no key. The plain-English policy box and the generated
+memo are the only components that reach out:
+
+```bash
 echo 'ANTHROPIC_API_KEY=sk-...' > .env
-
-.venv/bin/streamlit run app/main.py
+python -m streamlit run app/minimal.py      # note: no DEMO_MODE
 ```
 
-Then open <http://localhost:8501>.
+Without a key the policy box returns a readable message rather than a
+traceback, so leaving it unset is a safe way to present.
 
-### Demo mode
+### Reproducing the numbers
 
 ```bash
-POLICY_SIM_DEMO_MODE=1 .venv/bin/streamlit run app/main.py
+python model/diagnostics.py     # 25 engine invariants + MCMC convergence
+python model/reproduce.sh       # rebuild every artefact from raw PUMS, byte-for-byte
+python -m pytest app/tests -q   # 107 app tests
 ```
-
-Reads `scenarios/*.json` only and makes **zero network calls** — the parser and
-the memo are the only components that would reach out, and both refuse to run.
-A banner says so on screen. This is the mode to present in: it cannot be broken
-by wifi, a rate limit or an expired key.
-
-`app/tests/test_b5_hardening.py::test_full_demo_path_makes_no_network_call`
-runs the whole demo path with `socket.connect` patched to raise, which is the
-wifi-off run as a test.
 
 ### Environment variables
 
@@ -100,9 +121,11 @@ wifi-off run as a test.
 ## Tests
 
 ```bash
-.venv/bin/pip install -r requirements-dev.txt
-.venv/bin/python -m pytest app/tests -q
+python -m pip install -r requirements-dev.txt
+python -m pytest app/tests -q
 ```
+
+107 tests. `test_frontend_js.py` needs `node` on PATH and skips without it.
 
 ## Data sources
 

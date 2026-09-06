@@ -1,39 +1,26 @@
 <meta charset="utf-8">
 <style>
-  :root {
-    --sky:    #a8cfc5;   /* pastel blue */
-    --land:   #b6c994;   /* soft green  */
-    --coast:  #dbe2ba;
-    --lake:   #8dbfc0;
-    --panel:  #f9f9ef;   /* light beige */
-    --ink:    #344c40;
-    --muted:  #7e8c73;
-    --green:  #31553f;
-  }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; background: transparent; }
   #wrap {
     position: relative; max-width: 1200px; margin: 0 auto;
-    border-radius: 14px;
-    overflow: hidden;
-    background: var(--sky);
-    border: 1px solid #cfe0d6;
+    border-radius: 14px; overflow: hidden;
+    background: #a8cfc5; border: 1px solid #cfe0d6;
   }
   canvas { display: block; width: 100%; height: auto; cursor: default; }
   canvas.pick { cursor: pointer; }
   #hint {
     position: absolute; right: 14px; bottom: 11px;
     font: 500 10px/1 "DM Sans", -apple-system, "Segoe UI", sans-serif;
-    letter-spacing: .06em; color: #4d7361; opacity: .8;
+    letter-spacing: .06em; color: #4d7361; opacity: .85;
     pointer-events: none; user-select: none;
   }
   #reset {
     position: absolute; right: 12px; top: 11px;
     font: 550 10px/1 "DM Sans", -apple-system, "Segoe UI", sans-serif;
-    letter-spacing: .04em;
-    background: var(--panel); color: var(--green);
-    border: 1px solid #dfe5d3; border-radius: 7px;
-    padding: 7px 11px; cursor: pointer;
+    letter-spacing: .04em; background: #f9f9ef; color: #31553f;
+    border: 1px solid #dfe5d3; border-radius: 7px; padding: 7px 11px;
+    cursor: pointer;
   }
   #reset:hover { background: #eef2e2; }
   #reset[hidden] { display: none; }
@@ -42,205 +29,8 @@
 <div id="wrap">
   <canvas id="map"></canvas>
   <button id="reset" hidden>Back to national</button>
-  <div id="hint">click a metro for its local numbers</div>
+  <div id="hint">click a metro to zoom into it</div>
 </div>
 
-<script>
-const GEO = {"coast":[[-1095,244],[-1032,201],[-962,205],[-910,229],[-851,255],[-803,284],[-742,300],[-682,320],[-617,344],[-540,336],[-463,361],[-388,347],[-314,375],[-228,365],[-145,391],[-66,376],[14,399],[90,382],[165,407],[238,390],[302,410],[344,377],[387,348],[429,357],[468,338],[510,356],[550,389],[591,377],[632,402],[675,384],[720,412],[766,398],[812,422],[851,405],[889,424],[927,398],[967,413],[1007,393],[1044,423],[1075,464],[1048,494],[1019,513],[993,542],[1009,580],[980,610],[951,640],[924,646],[902,679],[879,698],[866,735],[854,786],[836,829],[812,794],[802,755],[780,716],[754,688],[716,694],[682,715],[643,699],[610,722],[565,711],[527,738],[485,729],[448,750],[401,741],[360,764],[313,751],[269,773],[216,759],[174,780],[133,768],[96,789],[53,777],[5,797],[-39,785],[-84,808],[-128,796],[-174,816],[-221,803],[-264,823],[-314,812],[-365,827],[-418,808],[-470,815],[-517,790],[-559,798],[-603,774],[-645,781],[-688,755],[-727,763],[-769,733],[-812,727],[-851,704],[-891,694],[-928,666],[-966,646],[-998,616],[-1026,584],[-1051,545],[-1073,510],[-1085,470],[-1096,426],[-1080,385],[-1098,349],[-1080,313],[-1108,286]],"alaska":[[-1050,822],[-985,795],[-934,823],[-898,811],[-858,845],[-906,875],[-973,861],[-1027,880],[-1074,851]],"hawaii":[[-785,856,12],[-750,870,9],[-714,862,7],[-678,876,10],[-642,868,6]],"lakes":[[390,305,63,20],[464,290,43,18],[518,319,32,17],[553,338,28,16]],"bounds":{"x0":-1108,"x1":1075,"y0":201,"y1":829}};
-
-// Metro positions come from the reference map's own coordinate space, so the
-// pins sit where those cities actually are on this hand-drawn coastline rather
-// than being placed by eye.
-const METRO_XY = {
-  "San Francisco": [-975, 500],
-  "Phoenix":       [-620, 655],
-  "Houston":       [ 350, 710],
-  "Atlanta":       [ 640, 605],
-  "Detroit":       [ 530, 360],
-  "New York":      [ 915, 450],
-};
-
-const VIEW = { x0: -1165, x1: 1135, y0: 175, y1: 935 };
-// The reference coastline is drawn about 3.5:1. That is much wider than the
-// contiguous US actually is (~1.7:1), and at full width it reads as a smear.
-// Stretching y keeps every hand-drawn point exactly where it was relative to
-// its neighbours while giving the country believable proportions.
-const YS = 1.35;
-const W = VIEW.x1 - VIEW.x0, H = (VIEW.y1 - VIEW.y0) * YS;
-
-let metros = [], selected = null, hover = null, dpr = 1, scale = 1;
-const cv = document.getElementById("map");
-const ctx = cv.getContext("2d");
-const resetBtn = document.getElementById("reset");
-
-function seeded(s) { let t = s * 9301 + 49297; return () => (t = (t * 9301 + 49297) % 233280) / 233280; }
-
-function layout() {
-  const cssW = document.getElementById("wrap").clientWidth || 900;
-  const cssH = Math.round(cssW * H / W);
-  dpr = window.devicePixelRatio || 1;
-  cv.width = Math.round(cssW * dpr);
-  cv.height = Math.round(cssH * dpr);
-  cv.style.height = cssH + "px";
-  scale = cssW / W;
-  return cssH;
-}
-
-const tx = x => (x - VIEW.x0) * scale;
-const ty = y => (y - VIEW.y0) * scale * YS;
-
-function path(pts) {
-  ctx.beginPath();
-  pts.forEach(([x, y], i) => i ? ctx.lineTo(tx(x), ty(y)) : ctx.moveTo(tx(x), ty(y)));
-  ctx.closePath();
-}
-
-function draw() {
-  const cssH = layout();
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, cv.width, cv.height);
-
-  // land
-  path(GEO.coast);
-  ctx.fillStyle = "#b6c994"; ctx.fill();
-  ctx.strokeStyle = "#dbe2ba"; ctx.lineWidth = Math.max(1.5, 7 * scale); ctx.stroke();
-
-  // The Great Lakes straddle the border. Clipped to the land they vanish
-  // (they sit just north of the drawn coastline); unclipped and unmoved they
-  // float clear of it. Nudged onto the boundary they read correctly.
-  const LAKE_DY = 42;
-  ctx.fillStyle = "#8dbfc0";
-  for (const [x, y, rx, ry] of GEO.lakes) {
-    ctx.beginPath();
-    ctx.ellipse(tx(x), ty(y + LAKE_DY), rx * scale, ry * scale * YS, -0.18, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // a lightly suggested state grid, clipped to the coastline
-  ctx.save();
-  path(GEO.coast); ctx.clip();
-  ctx.strokeStyle = "rgba(83,121,82,.20)";
-  ctx.lineWidth = Math.max(0.6, 2 * scale);
-  for (let x = -950; x < 980; x += 150) {
-    ctx.beginPath(); ctx.moveTo(tx(x), ty(180)); ctx.lineTo(tx(x + 110), ty(800)); ctx.stroke();
-  }
-  for (let y = 290; y < 770; y += 105) {
-    ctx.beginPath(); ctx.moveTo(tx(-1100), ty(y)); ctx.lineTo(tx(1050), ty(y - 16)); ctx.stroke();
-  }
-  ctx.restore();
-
-  // alaska + hawaii, so the national picture is not just the lower 48
-  ctx.fillStyle = "#b6c994"; ctx.strokeStyle = "#dbe2ba";
-  ctx.lineWidth = Math.max(1, 5 * scale);
-  path(GEO.alaska); ctx.fill(); ctx.stroke();
-  for (const [x, y, r] of GEO.hawaii) {
-    ctx.beginPath(); ctx.arc(tx(x), ty(y), r * scale, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  }
-  ctx.font = `600 ${Math.max(6.5, 14 * scale)}px "DM Sans", "Segoe UI", sans-serif`;
-  ctx.fillStyle = "#7d9781"; ctx.textAlign = "left";
-  ctx.fillText("AK", tx(-1046), ty(905));
-  ctx.fillText("HI", tx(-760), ty(905));
-
-  for (const m of metros) drawMetro(m);
-  resetBtn.hidden = !selected;
-  Streamlit.setFrameHeight(cssH + 2);
-}
-
-function drawMetro(m) {
-  const xy = METRO_XY[m.metro];
-  if (!xy) return;
-  const [mx, my] = xy;
-  const isSel = selected === m.metro, isHot = hover === m.metro;
-  const rand = seeded(mx * 19 + my * 7);
-
-  ctx.save();
-  ctx.globalAlpha = selected && !isSel ? 0.45 : 1;
-
-  // a small skyline, same geometry every render
-  for (let i = 0; i < 8; i++) {
-    const x = mx - 24 + (i % 4) * 12 + (rand() - 0.5) * 4;
-    const y = my + 13 + Math.floor(i / 4) * 9;
-    const w = 6 + rand() * 5, h = 15 + rand() * 32;
-    ctx.fillStyle = i % 3 ? "#8fae86" : "#e5dfc5";
-    ctx.fillRect(tx(x), ty(y - h), w * scale, h * scale * YS);
-  }
-
-  // pin
-  const r = (isSel || isHot ? 7.5 : 5.5) * scale;
-  ctx.fillStyle = isSel ? "#31553f" : "#3d6b50";
-  ctx.beginPath(); ctx.arc(tx(mx), ty(my + 12), Math.max(3, r), 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#f2f5e4";
-  ctx.beginPath(); ctx.arc(tx(mx), ty(my + 12), Math.max(1.2, r * 0.4), 0, Math.PI * 2); ctx.fill();
-
-  // label: name, and the metro's own headline number
-  const fs = Math.max(8, 15 * scale);
-  ctx.font = `600 ${fs}px "DM Sans", "Segoe UI", sans-serif`;
-  ctx.textAlign = "center";
-  const line = (isSel || isHot) && m.value ? `${m.metro}  ${m.value}` : m.metro;
-  const wpx = ctx.measureText(line).width;
-  const lx = tx(mx), ly = ty(my + 12) - Math.max(12, 20 * scale);
-  ctx.fillStyle = "rgba(249,249,239,.92)";
-  ctx.beginPath();
-  ctx.roundRect(lx - wpx / 2 - 7, ly - fs, wpx + 14, fs + 9, 5);
-  ctx.fill();
-  ctx.fillStyle = isSel ? "#31553f" : "#536c5a";
-  ctx.fillText(line, lx, ly);
-  ctx.restore();
-}
-
-function hit(ev) {
-  const r = cv.getBoundingClientRect();
-  const px = ev.clientX - r.left, py = ev.clientY - r.top;
-  let best = null, bd = 1e9;
-  for (const m of metros) {
-    const xy = METRO_XY[m.metro]; if (!xy) continue;
-    const d = Math.hypot(px - tx(xy[0]), py - ty(xy[1] + 12));
-    if (d < bd) { bd = d; best = m.metro; }
-  }
-  return bd < Math.max(22, 34 * scale) ? best : null;
-}
-
-cv.addEventListener("mousemove", e => {
-  const h = hit(e);
-  cv.classList.toggle("pick", !!h);
-  if (h !== hover) { hover = h; draw(); }
-});
-cv.addEventListener("mouseleave", () => { if (hover) { hover = null; draw(); } });
-cv.addEventListener("click", e => {
-  const h = hit(e);
-  selected = (h && h !== selected) ? h : null;
-  draw();
-  Streamlit.setComponentValue(selected);
-});
-resetBtn.addEventListener("click", () => {
-  selected = null; draw(); Streamlit.setComponentValue(null);
-});
-window.addEventListener("resize", draw);
-
-// ---- minimal Streamlit component protocol --------------------------------
-const Streamlit = {
-  setComponentValue(v) {
-    window.parent.postMessage(
-      { isStreamlitMessage: true, type: "streamlit:setComponentValue", value: v, dataType: "json" }, "*");
-  },
-  setFrameHeight(h) {
-    window.parent.postMessage(
-      { isStreamlitMessage: true, type: "streamlit:setFrameHeight", height: h }, "*");
-  },
-  ready() {
-    window.parent.postMessage(
-      { isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*");
-  },
-};
-
-window.addEventListener("message", ev => {
-  if (!ev.data || ev.data.type !== "streamlit:render") return;
-  const args = ev.data.args || {};
-  metros = args.metros || [];
-  if (args.selected !== undefined) selected = args.selected;
-  draw();
-});
-
-Streamlit.ready();
-draw();
-</script>
+<script>const GEO = {"coast":[[-1095,244],[-1032,201],[-962,205],[-910,229],[-851,255],[-803,284],[-742,300],[-682,320],[-617,344],[-540,336],[-463,361],[-388,347],[-314,375],[-228,365],[-145,391],[-66,376],[14,399],[90,382],[165,407],[238,390],[302,410],[344,377],[387,348],[429,357],[468,338],[510,356],[550,389],[591,377],[632,402],[675,384],[720,412],[766,398],[812,422],[851,405],[889,424],[927,398],[967,413],[1007,393],[1044,423],[1075,464],[1048,494],[1019,513],[993,542],[1009,580],[980,610],[951,640],[924,646],[902,679],[879,698],[866,735],[854,786],[836,829],[812,794],[802,755],[780,716],[754,688],[716,694],[682,715],[643,699],[610,722],[565,711],[527,738],[485,729],[448,750],[401,741],[360,764],[313,751],[269,773],[216,759],[174,780],[133,768],[96,789],[53,777],[5,797],[-39,785],[-84,808],[-128,796],[-174,816],[-221,803],[-264,823],[-314,812],[-365,827],[-418,808],[-470,815],[-517,790],[-559,798],[-603,774],[-645,781],[-688,755],[-727,763],[-769,733],[-812,727],[-851,704],[-891,694],[-928,666],[-966,646],[-998,616],[-1026,584],[-1051,545],[-1073,510],[-1085,470],[-1096,426],[-1080,385],[-1098,349],[-1080,313],[-1108,286]],"alaska":[[-1050,822],[-985,795],[-934,823],[-898,811],[-858,845],[-906,875],[-973,861],[-1027,880],[-1074,851]],"hawaii":[[-785,856,12],[-750,870,9],[-714,862,7],[-678,876,10],[-642,868,6]],"lakes":[[390,305,63,20],[464,290,43,18],[518,319,32,17],[553,338,28,16]],"bounds":{"x0":-1108,"x1":1075,"y0":201,"y1":829}};</script>
+<script src="map.js"></script>

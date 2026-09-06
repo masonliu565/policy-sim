@@ -121,7 +121,7 @@ def test_chart_fonts_are_projector_sized():
 
 
 def test_interval_bars_are_thick_enough_to_read():
-    src = (REPO / "app" / "charts.py").read_text()
+    src = (REPO / "app" / "charts.py").read_text(encoding="utf-8")
     assert "linewidth=13" in src, "the p05-p95 bar must stay thick"
 
 
@@ -131,14 +131,14 @@ def test_theme_defines_both_palettes_with_identical_keys():
 
 
 def test_theme_config_exists():
-    cfg = (REPO / ".streamlit" / "config.toml").read_text()
+    cfg = (REPO / ".streamlit" / "config.toml").read_text(encoding="utf-8")
     for key in ("primaryColor", "backgroundColor", "secondaryBackgroundColor", "textColor"):
         assert key in cfg
 
 
 def test_no_gradient_backgrounds_in_the_app_css():
     """A TOML theme cannot express a gradient; the injected CSS can."""
-    css = (REPO / "app" / "main.py").read_text()
+    css = (REPO / "app" / "main.py").read_text(encoding="utf-8")
     assert "linear-gradient" not in css
     assert "radial-gradient" not in css
 
@@ -151,5 +151,5 @@ def test_at_most_two_font_families():
 
 def test_app_never_renders_a_bare_streamlit_metric(scenario_dir):
     """st.metric renders a point estimate with no interval. It must not appear."""
-    src = (REPO / "app" / "main.py").read_text()
+    src = (REPO / "app" / "main.py").read_text(encoding="utf-8")
     assert "st.metric(" not in src

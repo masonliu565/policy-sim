@@ -88,7 +88,7 @@ def test_every_impact_number_on_screen_is_bracketed(scenario_dir):
 def test_charts_module_exposes_no_point_formatter():
     """format_value is unit plumbing for axes; it must not be the public path."""
     assert hasattr(charts, "interval_text")
-    src = (__import__("pathlib").Path(charts.__file__)).read_text()
+    src = (__import__("pathlib").Path(charts.__file__)).read_text(encoding="utf-8")
     assert "THE RULE" in src
 
 

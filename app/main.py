@@ -658,7 +658,7 @@ def _render_verification(v) -> None:
 def load_evidence() -> list:
     path = Path(__file__).resolve().parent.parent / "data" / "evidence.json"
     try:
-        return json.loads(path.read_text())
+        return json.loads(path.read_text(encoding="utf-8"))
     except Exception:  # noqa: BLE001 — a missing evidence file must not kill the app
         return []
 
